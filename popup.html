@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Typed Calculator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="calculator-shell" aria-label="Typed calculator">
+      <header class="topbar">
+        <h1>Typed Calculator</h1>
+        <label class="angle-toggle" for="angleMode">
+          <span>Angle</span>
+          <select id="angleMode" aria-label="Angle mode">
+            <option value="rad">Radians</option>
+            <option value="deg">Degrees</option>
+          </select>
+        </label>
+      </header>
+
+      <section class="input-panel">
+        <label class="visually-hidden" for="expressionInput">Expression</label>
+        <textarea
+          id="expressionInput"
+          rows="2"
+          spellcheck="false"
+          placeholder="Try e^2, sin(pi), or log10(100)"
+        ></textarea>
+        <p id="hint" class="hint">Press Enter to save in history. Shift+Enter for newline.</p>
+      </section>
+
+      <section class="result-panel" aria-live="polite">
+        <p class="result-label">Result</p>
+        <p id="resultText" class="result-value">Type an expression to begin</p>
+      </section>
+
+      <section class="history-panel" aria-label="Calculation history">
+        <div class="history-header">
+          <h2>History</h2>
+          <button id="clearHistoryButton" type="button" class="ghost-button">Clear</button>
+        </div>
+        <ul id="historyList" class="history-list"></ul>
+      </section>
+    </main>
+
+    <script src="lib/jsep.iife.min.js"></script>
+    <script src="evaluator.js"></script>
+    <script src="history.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

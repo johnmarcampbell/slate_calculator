@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Typed Calculator",
+  "version": "0.1.0",
+  "description": "Type math expressions quickly with history insertion.",
+  "permissions": ["storage"],
+  "action": {
+    "default_title": "Typed Calculator",
+    "default_popup": "popup.html"
+  }
+}

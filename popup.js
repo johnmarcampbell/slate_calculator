@@ -100,6 +100,70 @@
     triggerPreview();
   }
 
+  async function copyToClipboard(value) {
+    const text = String(value ?? "");
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const tmp = document.createElement("textarea");
+    tmp.value = text;
+    tmp.setAttribute("readonly", "");
+    tmp.style.position = "absolute";
+    tmp.style.left = "-9999px";
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand("copy");
+    document.body.removeChild(tmp);
+  }
+
+  function createCopyButton(textToCopy) {
+    const copyIcon = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 1H4C2.9 1 2 1.9 2 3v12h2V3h12V1zm3 4H8C6.9 5 6 5.9 6 7v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
+    const copiedIcon = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>';
+
+    const copyButton = document.createElement("button");
+    copyButton.type = "button";
+    copyButton.className = "ghost-button icon-button history-copy";
+    copyButton.title = "Copy";
+    copyButton.setAttribute("aria-label", "Copy");
+    copyButton.innerHTML = copyIcon;
+
+    let resetTimer = null;
+
+    function resetCopiedState() {
+      copyButton.classList.remove("copied");
+      copyButton.innerHTML = copyIcon;
+      copyButton.title = "Copy";
+      copyButton.setAttribute("aria-label", "Copy");
+      if (resetTimer) {
+        window.clearTimeout(resetTimer);
+        resetTimer = null;
+      }
+    }
+
+    copyButton.addEventListener("click", async () => {
+      try {
+        await copyToClipboard(textToCopy);
+        copyButton.classList.add("copied");
+        copyButton.innerHTML = copiedIcon;
+        copyButton.title = "Copied";
+        copyButton.setAttribute("aria-label", "Copied");
+        if (resetTimer) {
+          window.clearTimeout(resetTimer);
+        }
+        resetTimer = window.setTimeout(() => {
+          resetCopiedState();
+        }, 900);
+      } catch (error) {
+        console.error("Clipboard copy failed", error);
+      }
+    });
+
+    return copyButton;
+  }
+
   function evaluateCurrentExpression(showErrors) {
     const expression = expressionInput.value;
     const evaluation = window.CalculatorEvaluator.evaluate(expression, angleMode);
@@ -168,6 +232,9 @@
     const item = document.createElement("li");
     item.className = "history-item";
 
+    const expressionLine = document.createElement("div");
+    expressionLine.className = "history-line";
+
     const expressionButton = document.createElement("button");
     expressionButton.type = "button";
     expressionButton.className = "history-expression";
@@ -176,6 +243,11 @@
     expressionButton.addEventListener("click", () => {
       insertTextAtCaret(entry.expression);
     });
+    expressionLine.appendChild(expressionButton);
+    expressionLine.appendChild(createCopyButton(entry.expression));
+
+    const resultLine = document.createElement("div");
+    resultLine.className = "history-line";
 
     const resultButton = document.createElement("button");
     resultButton.type = "button";
@@ -185,9 +257,11 @@
     resultButton.addEventListener("click", () => {
       insertTextAtCaret(entry.resultText);
     });
+    resultLine.appendChild(resultButton);
+    resultLine.appendChild(createCopyButton(entry.resultText));
 
-    item.appendChild(expressionButton);
-    item.appendChild(resultButton);
+    item.appendChild(expressionLine);
+    item.appendChild(resultLine);
     return item;
   }
 

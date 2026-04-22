@@ -163,6 +163,21 @@ body.detached {
   color: var(--accent);
 }
 
+.icon-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
 .topbar-button {
   background: rgba(10, 10, 10, 0.35);
   border-color: rgba(249, 234, 215, 0.45);
@@ -208,6 +223,30 @@ body.detached #popoutButton {
   cursor: pointer;
   font-family: "Courier New", Courier, monospace;
   font-size: 0.85rem;
+  width: 100%;
+}
+
+.history-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.history-copy {
+  flex: 0 0 auto;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.history-line:hover .history-copy,
+.history-copy:hover {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.history-copy.copied {
+  color: var(--ok);
 }
 
 .history-expression:hover,

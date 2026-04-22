@@ -18,7 +18,11 @@
               <option value="deg">Degrees</option>
             </select>
           </label>
-          <button id="popoutButton" type="button" class="ghost-button topbar-button">Pop Out</button>
+          <button id="popoutButton" type="button" class="ghost-button icon-button topbar-button" aria-label="Pop out" title="Pop out">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M14 4h6v6h-2V7.41l-7.29 7.3-1.42-1.42 7.3-7.29H14V4zm4 14H6V6h6V4H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-6h-2v6z"/>
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -41,7 +45,11 @@
       <section class="history-panel" aria-label="Calculation history">
         <div class="history-header">
           <h2>History</h2>
-          <button id="clearHistoryButton" type="button" class="ghost-button">Clear</button>
+          <button id="clearHistoryButton" type="button" class="ghost-button icon-button" aria-label="Clear history" title="Clear history">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z"/>
+            </svg>
+          </button>
         </div>
         <ul id="historyList" class="history-list"></ul>
       </section>

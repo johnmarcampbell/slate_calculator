@@ -9,12 +9,37 @@
   let previewTimer = null;
   let lastSelectionStart = 0;
   let lastSelectionEnd = 0;
+  const isDetachedWindow = new URLSearchParams(window.location.search).get("detached") === "1";
 
   const expressionInput = document.getElementById("expressionInput");
   const resultText = document.getElementById("resultText");
   const historyList = document.getElementById("historyList");
   const angleModeSelect = document.getElementById("angleMode");
   const clearHistoryButton = document.getElementById("clearHistoryButton");
+  const popoutButton = document.getElementById("popoutButton");
+
+  function openDetachedWindow() {
+    const url = chrome.runtime.getURL("popup.html?detached=1");
+
+    if (chrome.windows && chrome.windows.create) {
+      chrome.windows.create({
+        url,
+        type: "popup",
+        width: 460,
+        height: 700
+      }, () => {
+        if (!isDetachedWindow) {
+          window.close();
+        }
+      });
+      return;
+    }
+
+    window.open(url, "typed-calculator-popout", "popup,width=460,height=700");
+    if (!isDetachedWindow) {
+      window.close();
+    }
+  }
 
   function formatResult(value) {
     if (!Number.isFinite(value)) {
@@ -171,6 +196,10 @@
   }
 
   async function initializeState() {
+    if (isDetachedWindow) {
+      document.body.classList.add("detached");
+    }
+
     const [savedAngleMode, savedHistory] = await Promise.all([
       window.CalculatorHistory.getAngleMode(),
       window.CalculatorHistory.getHistory()
@@ -197,6 +226,12 @@
     historyEntries = await window.CalculatorHistory.clearHistory();
     renderHistory();
   });
+
+  if (popoutButton) {
+    popoutButton.addEventListener("click", () => {
+      openDetachedWindow();
+    });
+  }
 
   expressionInput.addEventListener("keydown", async (event) => {
     if (event.key === "Enter" && !event.shiftKey) {

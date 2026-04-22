@@ -10,13 +10,16 @@
     <main class="calculator-shell" aria-label="Typed calculator">
       <header class="topbar">
         <h1>Typed Calculator</h1>
-        <label class="angle-toggle" for="angleMode">
-          <span>Angle</span>
-          <select id="angleMode" aria-label="Angle mode">
-            <option value="rad">Radians</option>
-            <option value="deg">Degrees</option>
-          </select>
-        </label>
+        <div class="topbar-controls">
+          <label class="angle-toggle" for="angleMode">
+            <span>Angle</span>
+            <select id="angleMode" aria-label="Angle mode">
+              <option value="rad">Radians</option>
+              <option value="deg">Degrees</option>
+            </select>
+          </label>
+          <button id="popoutButton" type="button" class="ghost-button topbar-button">Pop Out</button>
+        </div>
       </header>
 
       <section class="input-panel">

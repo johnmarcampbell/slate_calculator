@@ -15,6 +15,7 @@ A Manifest V3 Chrome extension calculator focused on typed expressions rather th
 - Separate click targets in history:
   - click expression to insert expression at current cursor
   - click result to insert result at current cursor
+- Pop-out button to open the calculator in a separate window
 
 ## Important Syntax Rules
 

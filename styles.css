@@ -27,6 +27,11 @@ body {
     linear-gradient(145deg, var(--bg-top), var(--bg-bottom));
 }
 
+body.detached {
+  min-width: 100%;
+  max-width: 100%;
+}
+
 .calculator-shell {
   padding: 14px;
   display: grid;
@@ -44,6 +49,12 @@ body {
   margin: 0;
   font-size: 1.1rem;
   letter-spacing: 0.02em;
+}
+
+.topbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .angle-toggle {
@@ -148,6 +159,21 @@ body {
 .ghost-button:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.topbar-button {
+  background: rgba(10, 10, 10, 0.35);
+  border-color: rgba(249, 234, 215, 0.45);
+  color: #fff;
+}
+
+.topbar-button:hover {
+  border-color: rgba(255, 255, 255, 0.8);
+  color: #fff;
+}
+
+body.detached #popoutButton {
+  display: none;
 }
 
 .history-list {

@@ -9,6 +9,8 @@
   let previewTimer = null;
   let lastSelectionStart = 0;
   let lastSelectionEnd = 0;
+  let hasShownValidResult = false;
+  let lastValidResultText = "";
   const isDetachedWindow = new URLSearchParams(window.location.search).get("detached") === "1";
 
   const expressionInput = document.getElementById("expressionInput");
@@ -106,13 +108,19 @@
       if (showErrors) {
         setResultMessage("Error: " + evaluation.error, true);
       } else {
-        setResultMessage("Waiting for a valid expression", false);
+        if (hasShownValidResult) {
+          setResultMessage(lastValidResultText, false);
+        } else {
+          setResultMessage("", false);
+        }
       }
       return null;
     }
 
     const formatted = formatResult(evaluation.value);
     setResultMessage(formatted, false);
+    hasShownValidResult = true;
+    lastValidResultText = formatted;
 
     return {
       expression,
@@ -128,6 +136,8 @@
     window.clearTimeout(previewTimer);
     previewTimer = window.setTimeout(() => {
       if (!expressionInput.value.trim()) {
+        hasShownValidResult = false;
+        lastValidResultText = "";
         setResultMessage("Type an expression to begin", false);
         expressionInput.classList.remove("error");
         return;
@@ -146,6 +156,9 @@
     renderHistory();
 
     expressionInput.value = "";
+    hasShownValidResult = false;
+    lastValidResultText = "";
+    setResultMessage("Type an expression to begin", false);
     expressionInput.focus();
     expressionInput.setSelectionRange(0, 0);
     updateCaretSnapshot();

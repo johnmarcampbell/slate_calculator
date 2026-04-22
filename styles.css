@@ -123,6 +123,8 @@ body.detached {
 .result-value {
   margin: 5px 0 0;
   font-size: 1.12rem;
+  line-height: 1.3;
+  min-height: 1.3em;
   font-family: "Courier New", Courier, monospace;
   word-break: break-word;
 }

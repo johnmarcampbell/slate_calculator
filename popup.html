@@ -11,13 +11,6 @@
       <header class="topbar">
         <h1>Typed Calculator</h1>
         <div class="topbar-controls">
-          <label class="angle-toggle" for="angleMode">
-            <span>Angle</span>
-            <select id="angleMode" aria-label="Angle mode">
-              <option value="rad">Radians</option>
-              <option value="deg">Degrees</option>
-            </select>
-          </label>
           <div class="mode-menu-wrap">
             <button id="modeMenuButton" type="button" class="ghost-button icon-button topbar-button" aria-label="Mode menu" aria-haspopup="menu" aria-expanded="false" aria-controls="modeMenu" title="Mode menu">
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -32,6 +25,15 @@
               <button id="graphModeButton" type="button" class="mode-menu-item" role="menuitemradio" aria-checked="false">
                 <span class="mode-check" aria-hidden="true">✓</span>
                 <span>Graphing Mode</span>
+              </button>
+              <div class="mode-menu-divider" aria-hidden="true"></div>
+              <button id="radiansAngleButton" type="button" class="mode-menu-item active" role="menuitemradio" aria-checked="true">
+                <span class="mode-check" aria-hidden="true">✓</span>
+                <span>Radians</span>
+              </button>
+              <button id="degreesAngleButton" type="button" class="mode-menu-item" role="menuitemradio" aria-checked="false">
+                <span class="mode-check" aria-hidden="true">✓</span>
+                <span>Degrees</span>
               </button>
             </div>
           </div>

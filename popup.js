@@ -30,13 +30,14 @@
   const expressionInput = document.getElementById("expressionInput");
   const resultText = document.getElementById("resultText");
   const historyList = document.getElementById("historyList");
-  const angleModeSelect = document.getElementById("angleMode");
   const clearHistoryButton = document.getElementById("clearHistoryButton");
   const popoutButton = document.getElementById("popoutButton");
   const modeMenuButton = document.getElementById("modeMenuButton");
   const modeMenu = document.getElementById("modeMenu");
   const calculatorModeButton = document.getElementById("calculatorModeButton");
   const graphModeButton = document.getElementById("graphModeButton");
+  const radiansAngleButton = document.getElementById("radiansAngleButton");
+  const degreesAngleButton = document.getElementById("degreesAngleButton");
   const calculatorView = document.getElementById("calculatorView");
   const graphView = document.getElementById("graphView");
 
@@ -274,6 +275,22 @@
     } else {
       expressionInput.focus();
       updateCaretSnapshot();
+    }
+  }
+
+  async function setAngleMode(nextMode, shouldPersist) {
+    angleMode = nextMode === "deg" ? "deg" : "rad";
+    const degreesActive = angleMode === "deg";
+    radiansAngleButton.classList.toggle("active", !degreesActive);
+    degreesAngleButton.classList.toggle("active", degreesActive);
+    radiansAngleButton.setAttribute("aria-checked", String(!degreesActive));
+    degreesAngleButton.setAttribute("aria-checked", String(degreesActive));
+    if (shouldPersist !== false) {
+      await window.CalculatorHistory.setAngleMode(angleMode);
+    }
+    triggerPreview();
+    if (activeView === "graph") {
+      queueGraphRedraw(false);
     }
   }
 
@@ -621,8 +638,7 @@
       window.CalculatorHistory.getGraphSettings()
     ]);
 
-    angleMode = savedAngleMode;
-    angleModeSelect.value = angleMode;
+    await setAngleMode(savedAngleMode, false);
 
     historyEntries = savedHistory;
     renderHistory();
@@ -637,15 +653,6 @@
     updateCaretSnapshot();
   }
 
-  angleModeSelect.addEventListener("change", async () => {
-    angleMode = angleModeSelect.value === "deg" ? "deg" : "rad";
-    await window.CalculatorHistory.setAngleMode(angleMode);
-    triggerPreview();
-    if (activeView === "graph") {
-      queueGraphRedraw(false);
-    }
-  });
-
   modeMenuButton.addEventListener("click", () => {
     toggleModeMenu();
   });
@@ -656,6 +663,16 @@
 
   graphModeButton.addEventListener("click", () => {
     setActiveView("graph");
+  });
+
+  radiansAngleButton.addEventListener("click", async () => {
+    await setAngleMode("rad");
+    closeModeMenu();
+  });
+
+  degreesAngleButton.addEventListener("click", async () => {
+    await setAngleMode("deg");
+    closeModeMenu();
   });
 
   document.addEventListener("click", (event) => {

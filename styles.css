@@ -74,7 +74,7 @@ body.detached {
   position: absolute;
   right: 0;
   top: calc(100% + 6px);
-  width: 190px;
+  width: 210px;
   display: none;
   border: 1px solid rgba(249, 234, 215, 0.45);
   border-radius: 10px;
@@ -101,10 +101,6 @@ body.detached {
   cursor: pointer;
 }
 
-.mode-menu-item + .mode-menu-item {
-  border-top: 1px solid rgba(249, 234, 215, 0.2);
-}
-
 .mode-menu-item:hover {
   background: rgba(255, 255, 255, 0.11);
 }
@@ -124,20 +120,10 @@ body.detached {
   opacity: 1;
 }
 
-.angle-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.84rem;
-}
-
-.angle-toggle select {
-  border: 1px solid rgba(249, 234, 215, 0.45);
-  background: rgba(10, 10, 10, 0.35);
-  color: #fff;
-  border-radius: 8px;
-  padding: 4px 8px;
-  font-size: 0.82rem;
+.mode-menu-divider {
+  height: 1px;
+  margin: 2px 8px;
+  background: rgba(249, 234, 215, 0.35);
 }
 
 .input-panel,

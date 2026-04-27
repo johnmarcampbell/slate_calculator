@@ -3,14 +3,28 @@
 
   const HISTORY_LIMIT = 80;
   const PREVIEW_DEBOUNCE_MS = 120;
+  const GRAPH_PREVIEW_DEBOUNCE_MS = 140;
+  const DEFAULT_GRAPH_SETTINGS = {
+    expression: "",
+    xMin: -10,
+    xMax: 10,
+    yMin: -10,
+    yMax: 10,
+    yAuto: true
+  };
 
   let angleMode = "rad";
   let historyEntries = [];
+  let activeView = "calculator";
+  let graphSettings = Object.assign({}, DEFAULT_GRAPH_SETTINGS);
   let previewTimer = null;
+  let graphPreviewTimer = null;
   let lastSelectionStart = 0;
   let lastSelectionEnd = 0;
   let hasShownValidResult = false;
   let lastValidResultText = "";
+  let grapher = null;
+  let dragState = null;
   const isDetachedWindow = new URLSearchParams(window.location.search).get("detached") === "1";
 
   const expressionInput = document.getElementById("expressionInput");
@@ -19,6 +33,24 @@
   const angleModeSelect = document.getElementById("angleMode");
   const clearHistoryButton = document.getElementById("clearHistoryButton");
   const popoutButton = document.getElementById("popoutButton");
+  const modeMenuButton = document.getElementById("modeMenuButton");
+  const modeMenu = document.getElementById("modeMenu");
+  const calculatorModeButton = document.getElementById("calculatorModeButton");
+  const graphModeButton = document.getElementById("graphModeButton");
+  const calculatorView = document.getElementById("calculatorView");
+  const graphView = document.getElementById("graphView");
+
+  const graphExpressionInput = document.getElementById("graphExpressionInput");
+  const xMinInput = document.getElementById("xMinInput");
+  const xMaxInput = document.getElementById("xMaxInput");
+  const yMinInput = document.getElementById("yMinInput");
+  const yMaxInput = document.getElementById("yMaxInput");
+  const yAutoCheckbox = document.getElementById("yAutoCheckbox");
+  const graphCanvas = document.getElementById("graphCanvas");
+  const graphStatusText = document.getElementById("graphStatusText");
+  const graphCoordsText = document.getElementById("graphCoordsText");
+  const graphRedrawButton = document.getElementById("graphRedrawButton");
+  const graphResetButton = document.getElementById("graphResetButton");
 
   function openDetachedWindow() {
     const url = chrome.runtime.getURL("popup.html?detached=1");
@@ -65,6 +97,302 @@
     resultText.classList.toggle("error", Boolean(isError));
     resultText.classList.toggle("success", !isError);
     expressionInput.classList.toggle("error", Boolean(isError));
+  }
+
+  function setGraphStatus(message, isError) {
+    graphStatusText.textContent = message;
+    graphStatusText.classList.toggle("error", Boolean(isError));
+  }
+
+  function sanitizeGraphSettings(settings) {
+    const source = settings && typeof settings === "object" ? settings : {};
+    const safe = {
+      expression: String(source.expression || ""),
+      xMin: Number.isFinite(Number(source.xMin)) ? Number(source.xMin) : DEFAULT_GRAPH_SETTINGS.xMin,
+      xMax: Number.isFinite(Number(source.xMax)) ? Number(source.xMax) : DEFAULT_GRAPH_SETTINGS.xMax,
+      yMin: Number.isFinite(Number(source.yMin)) ? Number(source.yMin) : DEFAULT_GRAPH_SETTINGS.yMin,
+      yMax: Number.isFinite(Number(source.yMax)) ? Number(source.yMax) : DEFAULT_GRAPH_SETTINGS.yMax,
+      yAuto: source.yAuto !== false
+    };
+
+    if (safe.xMax <= safe.xMin) {
+      safe.xMin = DEFAULT_GRAPH_SETTINGS.xMin;
+      safe.xMax = DEFAULT_GRAPH_SETTINGS.xMax;
+    }
+
+    if (safe.yMax <= safe.yMin) {
+      safe.yMin = DEFAULT_GRAPH_SETTINGS.yMin;
+      safe.yMax = DEFAULT_GRAPH_SETTINGS.yMax;
+    }
+
+    return safe;
+  }
+
+  function updateGraphInputsFromState() {
+    graphExpressionInput.value = graphSettings.expression;
+    xMinInput.value = graphSettings.xMin;
+    xMaxInput.value = graphSettings.xMax;
+    yMinInput.value = graphSettings.yMin;
+    yMaxInput.value = graphSettings.yMax;
+    yAutoCheckbox.checked = graphSettings.yAuto;
+    yMinInput.disabled = graphSettings.yAuto;
+    yMaxInput.disabled = graphSettings.yAuto;
+  }
+
+  function readGraphSettingsFromInputs() {
+    const next = {
+      expression: graphExpressionInput.value.trim(),
+      xMin: Number(xMinInput.value),
+      xMax: Number(xMaxInput.value),
+      yMin: Number(yMinInput.value),
+      yMax: Number(yMaxInput.value),
+      yAuto: yAutoCheckbox.checked
+    };
+
+    if (!Number.isFinite(next.xMin) || !Number.isFinite(next.xMax) || next.xMax <= next.xMin) {
+      return { ok: false, error: "x range must be valid and x max must be greater than x min" };
+    }
+
+    if (!next.yAuto && (!Number.isFinite(next.yMin) || !Number.isFinite(next.yMax) || next.yMax <= next.yMin)) {
+      return { ok: false, error: "y range must be valid and y max must be greater than y min" };
+    }
+
+    if (next.yAuto) {
+      next.yMin = graphSettings.yMin;
+      next.yMax = graphSettings.yMax;
+    }
+
+    return { ok: true, value: next };
+  }
+
+  function getCanvasRelativePoint(event) {
+    const rect = graphCanvas.getBoundingClientRect();
+    const scaleX = graphCanvas.width / Math.max(rect.width, 1);
+    const scaleY = graphCanvas.height / Math.max(rect.height, 1);
+    return {
+      px: (event.clientX - rect.left) * scaleX,
+      py: (event.clientY - rect.top) * scaleY
+    };
+  }
+
+  async function persistGraphSettings() {
+    await window.CalculatorHistory.setGraphSettings(graphSettings);
+  }
+
+  function updateCoordsMessage(point) {
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+      graphCoordsText.textContent = "x: -, y: -";
+      return;
+    }
+
+    const xLabel = formatResult(point.x);
+    const yLabel = formatResult(point.y);
+    graphCoordsText.textContent = "x: " + xLabel + ", y: " + yLabel;
+  }
+
+  async function redrawGraph(showErrors) {
+    if (!grapher) {
+      return;
+    }
+
+    const parsed = readGraphSettingsFromInputs();
+    if (!parsed.ok) {
+      if (showErrors) {
+        setGraphStatus("Error: " + parsed.error, true);
+      }
+      return;
+    }
+
+    graphSettings = parsed.value;
+    grapher.setExpression(graphSettings.expression);
+    grapher.setView(graphSettings);
+
+    const drawResult = grapher.draw();
+    if (!drawResult.ok) {
+      if (showErrors) {
+        setGraphStatus("Error: " + drawResult.error, true);
+      }
+      return;
+    }
+
+    if (graphSettings.yAuto) {
+      const nextView = grapher.getView();
+      graphSettings.yMin = nextView.yMin;
+      graphSettings.yMax = nextView.yMax;
+      yMinInput.value = graphSettings.yMin;
+      yMaxInput.value = graphSettings.yMax;
+    }
+
+    setGraphStatus(drawResult.status, false);
+    await persistGraphSettings();
+  }
+
+  function queueGraphRedraw(showErrors) {
+    if (!grapher) {
+      return;
+    }
+
+    window.clearTimeout(graphPreviewTimer);
+    graphPreviewTimer = window.setTimeout(() => {
+      redrawGraph(showErrors).catch((error) => {
+        console.error(error);
+        setGraphStatus("Error: failed to draw graph", true);
+      });
+    }, GRAPH_PREVIEW_DEBOUNCE_MS);
+  }
+
+  function closeModeMenu() {
+    modeMenu.classList.remove("open");
+    modeMenuButton.setAttribute("aria-expanded", "false");
+  }
+
+  function toggleModeMenu(forceOpen) {
+    const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : !modeMenu.classList.contains("open");
+    modeMenu.classList.toggle("open", shouldOpen);
+    modeMenuButton.setAttribute("aria-expanded", String(shouldOpen));
+  }
+
+  function setActiveView(viewName) {
+    activeView = viewName === "graph" ? "graph" : "calculator";
+    const graphActive = activeView === "graph";
+
+    calculatorView.classList.toggle("hidden", graphActive);
+    graphView.classList.toggle("hidden", !graphActive);
+    calculatorModeButton.classList.toggle("active", !graphActive);
+    graphModeButton.classList.toggle("active", graphActive);
+    calculatorModeButton.setAttribute("aria-checked", String(!graphActive));
+    graphModeButton.setAttribute("aria-checked", String(graphActive));
+    closeModeMenu();
+
+    if (graphActive) {
+      if (!graphExpressionInput.value.trim() && expressionInput.value.trim()) {
+        graphExpressionInput.value = expressionInput.value.trim();
+      }
+      queueGraphRedraw(false);
+      graphExpressionInput.focus();
+      graphExpressionInput.setSelectionRange(graphExpressionInput.value.length, graphExpressionInput.value.length);
+    } else {
+      expressionInput.focus();
+      updateCaretSnapshot();
+    }
+  }
+
+  function setupGraphInteractions() {
+    grapher = window.CalculatorGrapher.create(graphCanvas, {
+      evaluateAtX: (expression, x) => {
+        return window.CalculatorEvaluator.evaluateWithVariables(expression, angleMode, { x });
+      }
+    });
+
+    graphCanvas.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const { px, py } = getCanvasRelativePoint(event);
+      const scale = event.deltaY < 0 ? 0.9 : 1.1;
+      grapher.zoomAtPixel(scale, px, py);
+      const nextView = grapher.getView();
+      graphSettings.xMin = nextView.xMin;
+      graphSettings.xMax = nextView.xMax;
+      if (!graphSettings.yAuto) {
+        graphSettings.yMin = nextView.yMin;
+        graphSettings.yMax = nextView.yMax;
+      }
+      updateGraphInputsFromState();
+      queueGraphRedraw(false);
+    });
+
+    graphCanvas.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+
+      graphCanvas.setPointerCapture(event.pointerId);
+      dragState = {
+        pointerId: event.pointerId,
+        x: event.clientX,
+        y: event.clientY
+      };
+    });
+
+    graphCanvas.addEventListener("pointermove", (event) => {
+      if (dragState && dragState.pointerId === event.pointerId) {
+        const rect = graphCanvas.getBoundingClientRect();
+        const scaleX = graphCanvas.width / Math.max(rect.width, 1);
+        const scaleY = graphCanvas.height / Math.max(rect.height, 1);
+        const dx = (event.clientX - dragState.x) * scaleX;
+        const dy = (event.clientY - dragState.y) * scaleY;
+        dragState.x = event.clientX;
+        dragState.y = event.clientY;
+
+        grapher.panByPixels(dx, dy);
+        const nextView = grapher.getView();
+        graphSettings.xMin = nextView.xMin;
+        graphSettings.xMax = nextView.xMax;
+        if (!graphSettings.yAuto) {
+          graphSettings.yMin = nextView.yMin;
+          graphSettings.yMax = nextView.yMax;
+        }
+        updateGraphInputsFromState();
+        queueGraphRedraw(false);
+        return;
+      }
+
+      const { px } = getCanvasRelativePoint(event);
+      const nearest = grapher.setHoverPixel(px);
+      updateCoordsMessage(nearest);
+    });
+
+    graphCanvas.addEventListener("pointerup", async (event) => {
+      if (!dragState || dragState.pointerId !== event.pointerId) {
+        return;
+      }
+
+      graphCanvas.releasePointerCapture(event.pointerId);
+      dragState = null;
+      await persistGraphSettings();
+    });
+
+    graphCanvas.addEventListener("pointercancel", () => {
+      dragState = null;
+    });
+
+    graphCanvas.addEventListener("pointerleave", () => {
+      if (dragState) {
+        return;
+      }
+      grapher.clearHover();
+      updateCoordsMessage(null);
+    });
+
+    graphExpressionInput.addEventListener("input", () => {
+      queueGraphRedraw(false);
+    });
+
+    [xMinInput, xMaxInput, yMinInput, yMaxInput].forEach((input) => {
+      input.addEventListener("input", () => {
+        queueGraphRedraw(false);
+      });
+    });
+
+    yAutoCheckbox.addEventListener("change", () => {
+      yMinInput.disabled = yAutoCheckbox.checked;
+      yMaxInput.disabled = yAutoCheckbox.checked;
+      queueGraphRedraw(true);
+    });
+
+    graphRedrawButton.addEventListener("click", () => {
+      redrawGraph(true).catch((error) => {
+        console.error(error);
+        setGraphStatus("Error: failed to draw graph", true);
+      });
+    });
+
+    graphResetButton.addEventListener("click", () => {
+      graphSettings = Object.assign({}, DEFAULT_GRAPH_SETTINGS, {
+        expression: graphExpressionInput.value.trim()
+      });
+      updateGraphInputsFromState();
+      queueGraphRedraw(true);
+    });
   }
 
   function updateCaretSnapshot() {
@@ -287,9 +615,10 @@
       document.body.classList.add("detached");
     }
 
-    const [savedAngleMode, savedHistory] = await Promise.all([
+    const [savedAngleMode, savedHistory, savedGraphSettings] = await Promise.all([
       window.CalculatorHistory.getAngleMode(),
-      window.CalculatorHistory.getHistory()
+      window.CalculatorHistory.getHistory(),
+      window.CalculatorHistory.getGraphSettings()
     ]);
 
     angleMode = savedAngleMode;
@@ -297,6 +626,11 @@
 
     historyEntries = savedHistory;
     renderHistory();
+
+    graphSettings = sanitizeGraphSettings(savedGraphSettings || DEFAULT_GRAPH_SETTINGS);
+    updateGraphInputsFromState();
+    setupGraphInteractions();
+    await redrawGraph(false);
 
     expressionInput.focus();
     expressionInput.setSelectionRange(expressionInput.value.length, expressionInput.value.length);
@@ -307,6 +641,40 @@
     angleMode = angleModeSelect.value === "deg" ? "deg" : "rad";
     await window.CalculatorHistory.setAngleMode(angleMode);
     triggerPreview();
+    if (activeView === "graph") {
+      queueGraphRedraw(false);
+    }
+  });
+
+  modeMenuButton.addEventListener("click", () => {
+    toggleModeMenu();
+  });
+
+  calculatorModeButton.addEventListener("click", () => {
+    setActiveView("calculator");
+  });
+
+  graphModeButton.addEventListener("click", () => {
+    setActiveView("graph");
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!modeMenu.classList.contains("open")) {
+      return;
+    }
+
+    if (modeMenu.contains(event.target) || modeMenuButton.contains(event.target)) {
+      return;
+    }
+
+    closeModeMenu();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && modeMenu.classList.contains("open")) {
+      closeModeMenu();
+      modeMenuButton.focus();
+    }
   });
 
   clearHistoryButton.addEventListener("click", async () => {

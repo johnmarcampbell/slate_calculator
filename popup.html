@@ -18,6 +18,23 @@
               <option value="deg">Degrees</option>
             </select>
           </label>
+          <div class="mode-menu-wrap">
+            <button id="modeMenuButton" type="button" class="ghost-button icon-button topbar-button" aria-label="Mode menu" aria-haspopup="menu" aria-expanded="false" aria-controls="modeMenu" title="Mode menu">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+              </svg>
+            </button>
+            <div id="modeMenu" class="mode-menu" role="menu" aria-label="Mode selection">
+              <button id="calculatorModeButton" type="button" class="mode-menu-item active" role="menuitemradio" aria-checked="true">
+                <span class="mode-check" aria-hidden="true">✓</span>
+                <span>Calculator Mode</span>
+              </button>
+              <button id="graphModeButton" type="button" class="mode-menu-item" role="menuitemradio" aria-checked="false">
+                <span class="mode-check" aria-hidden="true">✓</span>
+                <span>Graphing Mode</span>
+              </button>
+            </div>
+          </div>
           <button id="popoutButton" type="button" class="ghost-button icon-button topbar-button" aria-label="Pop out" title="Pop out">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M14 4h6v6h-2V7.41l-7.29 7.3-1.42-1.42 7.3-7.29H14V4zm4 14H6V6h6V4H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-6h-2v6z"/>
@@ -26,38 +43,78 @@
         </div>
       </header>
 
-      <section class="input-panel">
-        <label class="visually-hidden" for="expressionInput">Expression</label>
-        <textarea
-          id="expressionInput"
-          rows="2"
-          spellcheck="false"
-          placeholder="Try e^2, sin(pi), or log10(100)"
-        ></textarea>
-        <p id="hint" class="hint">Press Enter to save in history. Shift+Enter for newline.</p>
+      <section id="calculatorView" class="view-panel" aria-label="Calculator view">
+
+        <section class="input-panel">
+          <label class="visually-hidden" for="expressionInput">Expression</label>
+          <textarea
+            id="expressionInput"
+            rows="2"
+            spellcheck="false"
+            placeholder="Try e^2, sin(pi), or log10(100)"
+          ></textarea>
+          <p id="hint" class="hint">Press Enter to save in history. Shift+Enter for newline.</p>
+        </section>
+
+        <section class="result-panel" aria-live="polite">
+          <p class="result-label">Result</p>
+          <p id="resultText" class="result-value">Type an expression to begin</p>
+        </section>
+
+        <section class="history-panel" aria-label="Calculation history">
+          <div class="history-header">
+            <h2>History</h2>
+            <button id="clearHistoryButton" type="button" class="ghost-button icon-button" aria-label="Clear history" title="Clear history">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z"/>
+              </svg>
+            </button>
+          </div>
+          <ul id="historyList" class="history-list"></ul>
+        </section>
       </section>
 
-      <section class="result-panel" aria-live="polite">
-        <p class="result-label">Result</p>
-        <p id="resultText" class="result-value">Type an expression to begin</p>
-      </section>
+      <section id="graphView" class="view-panel graph-panel hidden" aria-label="Graph view">
+        <section class="input-panel">
+          <label class="graph-label" for="graphExpressionInput">f(x)</label>
+          <input id="graphExpressionInput" type="text" spellcheck="false" placeholder="Try sin(x), x^2, or 1/x" />
+        </section>
 
-      <section class="history-panel" aria-label="Calculation history">
-        <div class="history-header">
-          <h2>History</h2>
-          <button id="clearHistoryButton" type="button" class="ghost-button icon-button" aria-label="Clear history" title="Clear history">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z"/>
-            </svg>
-          </button>
-        </div>
-        <ul id="historyList" class="history-list"></ul>
+        <section class="graph-controls-panel">
+          <div class="range-grid">
+            <label for="xMinInput">x min</label>
+            <input id="xMinInput" type="number" step="any" />
+            <label for="xMaxInput">x max</label>
+            <input id="xMaxInput" type="number" step="any" />
+            <label for="yMinInput">y min</label>
+            <input id="yMinInput" type="number" step="any" />
+            <label for="yMaxInput">y max</label>
+            <input id="yMaxInput" type="number" step="any" />
+          </div>
+
+          <label class="checkbox-line" for="yAutoCheckbox">
+            <input id="yAutoCheckbox" type="checkbox" checked />
+            <span>Auto-scale y</span>
+          </label>
+
+          <div class="graph-actions">
+            <button id="graphRedrawButton" type="button" class="ghost-button">Redraw</button>
+            <button id="graphResetButton" type="button" class="ghost-button">Reset View</button>
+          </div>
+        </section>
+
+        <section class="graph-canvas-panel">
+          <canvas id="graphCanvas" width="340" height="220" aria-label="Function graph"></canvas>
+          <p id="graphStatusText" class="hint">Enter f(x) and draw to begin.</p>
+          <p id="graphCoordsText" class="graph-coords">x: -, y: -</p>
+        </section>
       </section>
     </main>
 
     <script src="lib/jsep.iife.min.js"></script>
     <script src="evaluator.js"></script>
     <script src="history.js"></script>
+    <script src="grapher.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

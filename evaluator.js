@@ -81,6 +81,13 @@
         return node.value;
       case "Identifier": {
         const name = String(node.name).toLowerCase();
+        if (ctx.variables && name in ctx.variables) {
+          const variableValue = ctx.variables[name];
+          if (!Number.isFinite(variableValue)) {
+            throw new Error("Variable " + node.name + " is not finite");
+          }
+          return variableValue;
+        }
         if (name in SAFE_CONSTANTS) {
           return SAFE_CONSTANTS[name];
         }
@@ -146,7 +153,7 @@
     jsep.addBinaryOp("^", 11, true);
   }
 
-  function evaluate(expression, angleMode) {
+  function evaluateInternal(expression, angleMode, variables) {
     const trimmed = String(expression || "").trim();
     if (!trimmed) {
       return { ok: false, error: "Expression is empty" };
@@ -156,7 +163,8 @@
       const normalized = normalizeInput(trimmed);
       const ast = jsep(normalized);
       const value = evaluateAst(ast, {
-        functions: createFunctionMap(angleMode === "deg" ? "deg" : "rad")
+        functions: createFunctionMap(angleMode === "deg" ? "deg" : "rad"),
+        variables: variables && typeof variables === "object" ? variables : null
       });
 
       return {
@@ -172,7 +180,16 @@
     }
   }
 
+  function evaluate(expression, angleMode) {
+    return evaluateInternal(expression, angleMode, null);
+  }
+
+  function evaluateWithVariables(expression, angleMode, variables) {
+    return evaluateInternal(expression, angleMode, variables);
+  }
+
   window.CalculatorEvaluator = {
-    evaluate
+    evaluate,
+    evaluateWithVariables
   };
 })();

@@ -3,6 +3,7 @@
 
   const HISTORY_KEY = "typedCalcHistory";
   const ANGLE_MODE_KEY = "typedCalcAngleMode";
+  const GRAPH_SETTINGS_KEY = "typedCalcGraphSettings";
   const DEFAULT_LIMIT = 80;
 
   function getStorage() {
@@ -54,11 +55,29 @@
     });
   }
 
+  function getGraphSettings() {
+    return new Promise((resolve) => {
+      getStorage().get([GRAPH_SETTINGS_KEY], (payload) => {
+        const settings = payload[GRAPH_SETTINGS_KEY];
+        resolve(settings && typeof settings === "object" ? settings : null);
+      });
+    });
+  }
+
+  function setGraphSettings(settings) {
+    const safeSettings = settings && typeof settings === "object" ? settings : null;
+    return new Promise((resolve) => {
+      getStorage().set({ [GRAPH_SETTINGS_KEY]: safeSettings }, () => resolve(safeSettings));
+    });
+  }
+
   window.CalculatorHistory = {
     getHistory,
     addHistoryEntry,
     clearHistory,
     getAngleMode,
-    setAngleMode
+    setAngleMode,
+    getGraphSettings,
+    setGraphSettings
   };
 })();

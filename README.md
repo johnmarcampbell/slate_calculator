@@ -16,6 +16,12 @@ A Manifest V3 Chrome extension calculator focused on typed expressions rather th
   - click expression to insert expression at current cursor
   - click result to insert result at current cursor
 - Pop-out button to open the calculator in a separate window
+- Dedicated Graph tab in the popup:
+  - plot a single function `f(x)` with current angle mode
+  - set `x min/x max` and optional manual `y min/y max`
+  - auto-scale y toggle
+  - wheel zoom, drag-to-pan, and hover coordinate readout
+  - graph settings persistence via storage
 
 ## Important Syntax Rules
 
@@ -31,6 +37,7 @@ A Manifest V3 Chrome extension calculator focused on typed expressions rather th
 - `popup.js`: UI behavior, evaluation flow, history rendering, caret insertion
 - `evaluator.js`: Safe expression parsing and evaluation
 - `history.js`: `chrome.storage.local` persistence
+- `grapher.js`: Canvas graph rendering, sampling, and interactions
 - `lib/jsep.iife.min.js`: Vendored parser library build
 
 ## Load in Chrome
@@ -52,6 +59,12 @@ A Manifest V3 Chrome extension calculator focused on typed expressions rather th
   - enter a few expressions
   - click a past expression and verify insertion at caret
   - click a past result and verify insertion at caret
+- Graph tab:
+  - plot `x^2`, `sin(x)`, and `1/x`
+  - verify default view starts with `x` in `[-10, 10]` and y auto-scale enabled
+  - disable y auto-scale and set manual y bounds, then redraw
+  - zoom with mouse wheel and pan by dragging on canvas
+  - move pointer over the graph and verify coordinate readout updates
 
 ## Notes for Extension Development
 

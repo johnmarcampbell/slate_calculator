@@ -66,6 +66,31 @@ A Manifest V3 Chrome extension calculator focused on typed expressions rather th
   - zoom with mouse wheel and pan by dragging on canvas
   - move pointer over the graph and verify coordinate readout updates
 
+## Automated Tests
+
+This project uses Jest with a jsdom environment for local automated testing.
+
+- Install dependencies:
+  - `npm install`
+- Run all tests:
+  - `npm test`
+- Run in watch mode:
+  - `npm run test:watch`
+- Generate coverage report:
+  - `npm run test:coverage`
+- Use Make targets:
+  - `make test`
+  - `make test-watch`
+  - `make test-coverage`
+
+Current suite scope:
+
+- `evaluator.js`: expression parsing, math correctness, angle-mode behavior, and error handling
+- `history.js`: async storage persistence behavior and fallback/default rules
+- `grapher.js`: draw outcomes, sampling behavior, coordinate transforms, zoom/pan, and hover handling
+
+Popup DOM integration tests are intentionally excluded from this phase to keep the suite focused on high-risk core logic.
+
 ## Notes for Extension Development
 
 - Popup scripts run in a constrained environment with Content Security Policy, so avoiding `eval` is important.

@@ -23,6 +23,7 @@
 
   function normalizeInput(expression) {
     return expression
+      .replace(/#[^\r\n]*/g, "")
       .replace(/\u03C0/g, "pi")
       .replace(/\bPI\b/g, "pi")
       .replace(/\bln\b/gi, "ln")
@@ -161,6 +162,9 @@
 
     try {
       const normalized = normalizeInput(trimmed);
+      if (!normalized.trim()) {
+        return { ok: false, error: "Expression is empty" };
+      }
       const ast = jsep(normalized);
       const value = evaluateAst(ast, {
         functions: createFunctionMap(angleMode === "deg" ? "deg" : "rad"),

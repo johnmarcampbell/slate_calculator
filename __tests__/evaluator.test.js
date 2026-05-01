@@ -46,6 +46,32 @@ describe("CalculatorEvaluator.evaluate", () => {
     expect(logAlias).toMatchObject({ ok: true, value: 2, normalized: "log10(100)" });
   });
 
+  test("ignores inline comments starting with #", () => {
+    const evaluator = loadEvaluator();
+
+    const result = evaluator.evaluate("2 + 3 # this should be ignored", "rad");
+
+    expect(result).toMatchObject({ ok: true, value: 5, normalized: "2 + 3 " });
+  });
+
+  test("ignores comment lines and keeps following expression", () => {
+    const evaluator = loadEvaluator();
+
+    const result = evaluator.evaluate("# first line comment\n4*5", "rad");
+
+    expect(result.ok).toBe(true);
+    expect(result.value).toBe(20);
+  });
+
+  test("returns empty expression when input only has comments", () => {
+    const evaluator = loadEvaluator();
+
+    expect(evaluator.evaluate("# only comment", "rad")).toEqual({
+      ok: false,
+      error: "Expression is empty"
+    });
+  });
+
   test("handles trig in radians", () => {
     const evaluator = loadEvaluator();
 

@@ -91,6 +91,22 @@ describe("CalculatorHistory", () => {
     await expect(history.getGraphSettings()).resolves.toBeNull();
   });
 
+  test("expression draft defaults to empty string and persists text", async () => {
+    attachChromeStorage();
+    const history = loadHistory();
+
+    await expect(history.getExpressionDraft()).resolves.toBe("");
+    await expect(history.setExpressionDraft("2+2")).resolves.toBe("2+2");
+    await expect(history.getExpressionDraft()).resolves.toBe("2+2");
+  });
+
+  test("expression draft falls back to empty string for non-string payload", async () => {
+    attachChromeStorage({ typedCalcExpressionDraft: { value: "2+2" } });
+    const history = loadHistory();
+
+    await expect(history.getExpressionDraft()).resolves.toBe("");
+  });
+
   test("history falls back to empty array for non-array payload", async () => {
     attachChromeStorage({ typedCalcHistory: "bad" });
     const history = loadHistory();

@@ -4,6 +4,7 @@
   const HISTORY_KEY = "typedCalcHistory";
   const ANGLE_MODE_KEY = "typedCalcAngleMode";
   const GRAPH_SETTINGS_KEY = "typedCalcGraphSettings";
+  const EXPRESSION_DRAFT_KEY = "typedCalcExpressionDraft";
   const DEFAULT_LIMIT = 80;
 
   function getStorage() {
@@ -71,6 +72,22 @@
     });
   }
 
+  function getExpressionDraft() {
+    return new Promise((resolve) => {
+      getStorage().get([EXPRESSION_DRAFT_KEY], (payload) => {
+        const draft = payload[EXPRESSION_DRAFT_KEY];
+        resolve(typeof draft === "string" ? draft : "");
+      });
+    });
+  }
+
+  function setExpressionDraft(draft) {
+    const safeDraft = String(draft || "");
+    return new Promise((resolve) => {
+      getStorage().set({ [EXPRESSION_DRAFT_KEY]: safeDraft }, () => resolve(safeDraft));
+    });
+  }
+
   window.CalculatorHistory = {
     getHistory,
     addHistoryEntry,
@@ -78,6 +95,8 @@
     getAngleMode,
     setAngleMode,
     getGraphSettings,
-    setGraphSettings
+    setGraphSettings,
+    getExpressionDraft,
+    setExpressionDraft
   };
 })();

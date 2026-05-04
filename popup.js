@@ -19,6 +19,7 @@
   let graphSettings = Object.assign({}, DEFAULT_GRAPH_SETTINGS);
   let previewTimer = null;
   let graphPreviewTimer = null;
+  let draftSaveQueue = Promise.resolve();
   let lastSelectionStart = 0;
   let lastSelectionEnd = 0;
   let hasShownValidResult = false;
@@ -442,7 +443,18 @@
     expressionInput.focus();
     expressionInput.setSelectionRange(nextCaret, nextCaret);
     updateCaretSnapshot();
+    queueExpressionDraftSave(nextValue).catch((error) => {
+      console.error("Failed to save expression draft", error);
+    });
     triggerPreview();
+  }
+
+  function queueExpressionDraftSave(nextDraft) {
+    const safeDraft = String(nextDraft || "");
+    draftSaveQueue = draftSaveQueue
+      .catch(() => undefined)
+      .then(() => window.CalculatorHistory.setExpressionDraft(safeDraft));
+    return draftSaveQueue;
   }
 
   async function copyToClipboard(value) {
@@ -563,6 +575,7 @@
 
     historyEntries = await window.CalculatorHistory.addHistoryEntry(entry, HISTORY_LIMIT);
     renderHistory();
+    await queueExpressionDraftSave("");
 
     expressionInput.value = "";
     hasShownValidResult = false;
@@ -632,10 +645,11 @@
       document.body.classList.add("detached");
     }
 
-    const [savedAngleMode, savedHistory, savedGraphSettings] = await Promise.all([
+    const [savedAngleMode, savedHistory, savedGraphSettings, savedDraft] = await Promise.all([
       window.CalculatorHistory.getAngleMode(),
       window.CalculatorHistory.getHistory(),
-      window.CalculatorHistory.getGraphSettings()
+      window.CalculatorHistory.getGraphSettings(),
+      window.CalculatorHistory.getExpressionDraft()
     ]);
 
     await setAngleMode(savedAngleMode, false);
@@ -647,6 +661,11 @@
     updateGraphInputsFromState();
     setupGraphInteractions();
     await redrawGraph(false);
+
+    expressionInput.value = savedDraft;
+    if (savedDraft.trim()) {
+      evaluateCurrentExpression(false);
+    }
 
     expressionInput.focus();
     expressionInput.setSelectionRange(expressionInput.value.length, expressionInput.value.length);
@@ -714,6 +733,9 @@
 
   expressionInput.addEventListener("input", () => {
     updateCaretSnapshot();
+    queueExpressionDraftSave(expressionInput.value).catch((error) => {
+      console.error("Failed to save expression draft", error);
+    });
     triggerPreview();
   });
 

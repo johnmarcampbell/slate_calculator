@@ -46,6 +46,14 @@ describe("CalculatorEvaluator.evaluate", () => {
     expect(logAlias).toMatchObject({ ok: true, value: 2, normalized: "log10(100)" });
   });
 
+  test("strips commas and dollar signs before evaluation", () => {
+    const evaluator = loadEvaluator();
+
+    const result = evaluator.evaluate("$1,200 + 30", "rad");
+
+    expect(result).toMatchObject({ ok: true, value: 1230, normalized: "1200 + 30" });
+  });
+
   test("ignores inline comments starting with #", () => {
     const evaluator = loadEvaluator();
 

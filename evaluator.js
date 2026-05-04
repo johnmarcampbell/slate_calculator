@@ -24,6 +24,7 @@
   function normalizeInput(expression) {
     return expression
       .replace(/#[^\r\n]*/g, "")
+      .replace(/[,$]/g, "")
       .replace(/\u03C0/g, "pi")
       .replace(/\bPI\b/g, "pi")
       .replace(/\bln\b/gi, "ln")

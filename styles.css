@@ -1,4 +1,5 @@
 :root {
+  /* Color palette */
   --bg-top: #13263f;
   --bg-bottom: #0f1720;
   --panel: rgba(246, 240, 227, 0.92);
@@ -9,6 +10,13 @@
   --ok: #0e7f5b;
   --bad: #b12525;
   --border: rgba(31, 31, 31, 0.14);
+  
+  /* Spacing scale (8px grid) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
 }
 
 * {
@@ -33,14 +41,14 @@ body.detached {
 }
 
 .calculator-shell {
-  padding: 14px;
+  padding: var(--space-lg);
   display: grid;
-  gap: 12px;
+  gap: var(--space-lg);
 }
 
 .view-panel {
   display: grid;
-  gap: 12px;
+  gap: var(--space-lg);
 }
 
 .view-panel.hidden {
@@ -63,7 +71,7 @@ body.detached {
 .topbar-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .mode-menu-wrap,
@@ -295,7 +303,7 @@ body.detached {
   border: 1px solid var(--border);
   background: #fff;
   border-radius: 8px;
-  padding: 3px 7px;
+  padding: var(--space-xs) var(--space-sm);
   font-size: 0.76rem;
   cursor: pointer;
 }
@@ -339,46 +347,60 @@ body.detached #popoutButton {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 220px;
+  max-height: 280px;
   overflow-y: auto;
   display: grid;
-  gap: 6px;
+  gap: 0;
 }
 
 .history-item {
   display: grid;
-  gap: 4px;
-  padding: 7px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.62);
+  gap: 2px;
+  padding: var(--space-sm) 0;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+
+.history-item:last-child {
+  border-bottom: none;
 }
 
 .history-expression,
 .history-result {
   margin: 0;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   text-align: left;
-  padding: 3px 5px;
+  padding: var(--space-xs) var(--space-sm);
   cursor: pointer;
   font-family: "Courier New", Courier, monospace;
   font-size: 0.85rem;
+  color: var(--ink);
   width: 100%;
+  transition: background 100ms ease, border-color 100ms ease;
 }
 
 .history-line {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-sm);
 }
 
 .history-copy {
   flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 120ms ease;
+  color: var(--muted);
+}
+
+.history-copy svg {
+  width: 14px;
+  height: 14px;
 }
 
 .history-line:hover .history-copy,
@@ -393,12 +415,8 @@ body.detached #popoutButton {
 
 .history-expression:hover,
 .history-result:hover {
-  background: #fff;
-  border-color: var(--accent-soft);
-}
-
-.history-result {
-  color: var(--ok);
+  background: rgba(255, 255, 255, 0.5);
+  border-color: var(--border);
 }
 
 .empty-history {

@@ -629,7 +629,7 @@
         if (hasShownValidResult) {
           setResultMessage(lastValidResultText, false);
         } else {
-          setResultMessage("", false);
+          setResultMessage("0.0", false);
         }
       }
       return null;
@@ -661,7 +661,7 @@
       if (!expressionInput.value.trim()) {
         hasShownValidResult = false;
         lastValidResultText = "";
-        setResultMessage("", false);
+        setResultMessage("0.0", false);
         calculationPanel.classList.remove("error");
         return;
       }
@@ -682,7 +682,7 @@
     expressionInput.value = "";
     hasShownValidResult = false;
     lastValidResultText = "";
-    setResultMessage("", false);
+    setResultMessage("0.0", false);
     expressionInput.focus();
     expressionInput.setSelectionRange(0, 0);
     updateCaretSnapshot();

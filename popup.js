@@ -36,6 +36,8 @@
   const popoutButton = document.getElementById("popoutButton");
   const modeMenuButton = document.getElementById("modeMenuButton");
   const modeMenu = document.getElementById("modeMenu");
+  const settingsMenuButton = document.getElementById("settingsMenuButton");
+  const settingsMenu = document.getElementById("settingsMenu");
   const calculatorModeButton = document.getElementById("calculatorModeButton");
   const graphModeButton = document.getElementById("graphModeButton");
   const radiansAngleButton = document.getElementById("radiansAngleButton");
@@ -139,6 +141,7 @@
       updatePreview();
     }
     closeModeMenu();
+    closeSettingsMenu();
   }
 
   function updateNumberFormatUIFromSettings() {
@@ -323,10 +326,27 @@
     modeMenuButton.setAttribute("aria-expanded", "false");
   }
 
+  function closeSettingsMenu() {
+    settingsMenu.classList.remove("open");
+    settingsMenuButton.setAttribute("aria-expanded", "false");
+  }
+
   function toggleModeMenu(forceOpen) {
     const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : !modeMenu.classList.contains("open");
     modeMenu.classList.toggle("open", shouldOpen);
     modeMenuButton.setAttribute("aria-expanded", String(shouldOpen));
+    if (shouldOpen) {
+      closeSettingsMenu();
+    }
+  }
+
+  function toggleSettingsMenu(forceOpen) {
+    const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : !settingsMenu.classList.contains("open");
+    settingsMenu.classList.toggle("open", shouldOpen);
+    settingsMenuButton.setAttribute("aria-expanded", String(shouldOpen));
+    if (shouldOpen) {
+      closeModeMenu();
+    }
   }
 
   function setActiveView(viewName) {
@@ -340,6 +360,7 @@
     calculatorModeButton.setAttribute("aria-checked", String(!graphActive));
     graphModeButton.setAttribute("aria-checked", String(graphActive));
     closeModeMenu();
+    closeSettingsMenu();
 
     if (graphActive) {
       if (!graphExpressionInput.value.trim() && expressionInput.value.trim()) {
@@ -763,6 +784,10 @@
     toggleModeMenu();
   });
 
+  settingsMenuButton.addEventListener("click", () => {
+    toggleSettingsMenu();
+  });
+
   calculatorModeButton.addEventListener("click", () => {
     setActiveView("calculator");
   });
@@ -773,12 +798,12 @@
 
   radiansAngleButton.addEventListener("click", async () => {
     await setAngleMode("rad");
-    closeModeMenu();
+    closeSettingsMenu();
   });
 
   degreesAngleButton.addEventListener("click", async () => {
     await setAngleMode("deg");
-    closeModeMenu();
+    closeSettingsMenu();
   });
 
   numberFormatButton.addEventListener("click", () => {
@@ -834,15 +859,30 @@
     closeModeMenu();
   });
 
+  document.addEventListener("click", (event) => {
+    if (!settingsMenu.classList.contains("open")) {
+      return;
+    }
+
+    if (settingsMenu.contains(event.target) || settingsMenuButton.contains(event.target)) {
+      return;
+    }
+
+    closeSettingsMenu();
+  });
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       if (modeMenu.classList.contains("open")) {
         closeModeMenu();
         modeMenuButton.focus();
+      } else if (settingsMenu.classList.contains("open")) {
+        closeSettingsMenu();
+        settingsMenuButton.focus();
       } else if (numberFormatPanel.classList.contains("open")) {
         numberFormatPanel.classList.remove("open");
         numberFormatPanel.setAttribute("aria-hidden", "true");
-        numberFormatButton.focus();
+        settingsMenuButton.focus();
       }
     }
   });

@@ -44,8 +44,29 @@
                 <span>Degrees</span>
               </button>
               <div class="mode-menu-divider" aria-hidden="true"></div>
+              <button id="themeMenuButton" type="button" class="mode-menu-item" role="menuitem" aria-haspopup="menu" aria-expanded="false">
+                <span>Theme</span>
+                <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="margin-left: auto;">
+                  <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                </svg>
+              </button>
+              <div class="mode-menu-divider" aria-hidden="true"></div>
               <button id="numberFormatButton" type="button" class="mode-menu-item" role="menuitem">
                 <span>Number Format...</span>
+              </button>
+            </div>
+            <div id="themeSubmenu" class="mode-menu theme-submenu" role="menu" aria-label="Theme selection">
+              <button id="lightThemeButton" type="button" class="mode-menu-item" role="menuitemradio" aria-checked="false">
+                <span class="mode-check" aria-hidden="true">✓</span>
+                <span>Light</span>
+              </button>
+              <button id="neutralThemeButton" type="button" class="mode-menu-item" role="menuitemradio" aria-checked="false">
+                <span class="mode-check" aria-hidden="true">✓</span>
+                <span>Neutral</span>
+              </button>
+              <button id="darkThemeButton" type="button" class="mode-menu-item active" role="menuitemradio" aria-checked="true">
+                <span class="mode-check" aria-hidden="true">✓</span>
+                <span>Dark</span>
               </button>
             </div>
           </div>

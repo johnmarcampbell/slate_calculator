@@ -6,6 +6,7 @@
   const GRAPH_SETTINGS_KEY = "typedCalcGraphSettings";
   const EXPRESSION_DRAFT_KEY = "typedCalcExpressionDraft";
   const NUMBER_FORMAT_KEY = "typedCalcNumberFormat";
+  const THEME_KEY = "typedCalcTheme";
   const DEFAULT_LIMIT = 80;
 
   function getStorage() {
@@ -155,6 +156,36 @@
     });
   }
 
+  function getTheme() {
+    return new Promise((resolve) => {
+      getStorage().get([THEME_KEY], (payload) => {
+        let theme = payload[THEME_KEY];
+        
+        // If no theme is stored, detect system preference
+        if (!theme) {
+          if (typeof window !== "undefined" && window.matchMedia) {
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            theme = prefersDark ? "dark" : "light";
+          } else {
+            theme = "dark"; // Default fallback
+          }
+        }
+        
+        // Validate theme value
+        const validThemes = ["light", "dark", "neutral"];
+        resolve(validThemes.includes(theme) ? theme : "dark");
+      });
+    });
+  }
+
+  function setTheme(theme) {
+    const validThemes = ["light", "dark", "neutral"];
+    const safeTheme = validThemes.includes(theme) ? theme : "dark";
+    return new Promise((resolve) => {
+      getStorage().set({ [THEME_KEY]: safeTheme }, () => resolve(safeTheme));
+    });
+  }
+
   window.CalculatorHistory = {
     getHistory,
     addHistoryEntry,
@@ -166,6 +197,8 @@
     getExpressionDraft,
     setExpressionDraft,
     getNumberFormatSettings,
-    setNumberFormatSettings
+    setNumberFormatSettings,
+    getTheme,
+    setTheme
   };
 })();

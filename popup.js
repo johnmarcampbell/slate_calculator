@@ -43,6 +43,11 @@
   const graphModeButton = document.getElementById("graphModeButton");
   const radiansAngleButton = document.getElementById("radiansAngleButton");
   const degreesAngleButton = document.getElementById("degreesAngleButton");
+  const themeMenuButton = document.getElementById("themeMenuButton");
+  const themeSubmenu = document.getElementById("themeSubmenu");
+  const lightThemeButton = document.getElementById("lightThemeButton");
+  const darkThemeButton = document.getElementById("darkThemeButton");
+  const neutralThemeButton = document.getElementById("neutralThemeButton");
   const calculatorView = document.getElementById("calculatorView");
   const graphView = document.getElementById("graphView");
 
@@ -389,6 +394,47 @@
     triggerPreview();
     if (activeView === "graph") {
       queueGraphRedraw(false);
+    }
+  }
+
+  function toggleThemeSubmenu(forceOpen) {
+    const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : !themeSubmenu.classList.contains("open");
+    themeSubmenu.classList.toggle("open", shouldOpen);
+    themeMenuButton.setAttribute("aria-expanded", String(shouldOpen));
+  }
+
+  function closeThemeSubmenu() {
+    themeSubmenu.classList.remove("open");
+    themeMenuButton.setAttribute("aria-expanded", "false");
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+
+  async function setTheme(theme, shouldPersist) {
+    const validThemes = ["light", "dark", "neutral"];
+    const safeTheme = validThemes.includes(theme) ? theme : "dark";
+    
+    // Update UI
+    lightThemeButton.classList.toggle("active", safeTheme === "light");
+    darkThemeButton.classList.toggle("active", safeTheme === "dark");
+    neutralThemeButton.classList.toggle("active", safeTheme === "neutral");
+    lightThemeButton.setAttribute("aria-checked", String(safeTheme === "light"));
+    darkThemeButton.setAttribute("aria-checked", String(safeTheme === "dark"));
+    neutralThemeButton.setAttribute("aria-checked", String(safeTheme === "neutral"));
+    
+    // Apply theme to DOM
+    applyTheme(safeTheme);
+    
+    // Persist if needed
+    if (shouldPersist !== false) {
+      await window.CalculatorHistory.setTheme(safeTheme);
+    }
+    
+    // Redraw graph if in graph view to update canvas colors
+    if (activeView === "graph") {
+      await redrawGraph(false);
     }
   }
 
@@ -750,14 +796,16 @@
       document.body.classList.add("detached");
     }
 
-    const [savedAngleMode, savedHistory, savedGraphSettings, savedDraft, savedNumberFormat] = await Promise.all([
+    const [savedAngleMode, savedHistory, savedGraphSettings, savedDraft, savedNumberFormat, savedTheme] = await Promise.all([
       window.CalculatorHistory.getAngleMode(),
       window.CalculatorHistory.getHistory(),
       window.CalculatorHistory.getGraphSettings(),
       window.CalculatorHistory.getExpressionDraft(),
-      window.CalculatorHistory.getNumberFormatSettings()
+      window.CalculatorHistory.getNumberFormatSettings(),
+      window.CalculatorHistory.getTheme()
     ]);
 
+    await setTheme(savedTheme, false);
     await setAngleMode(savedAngleMode, false);
 
     historyEntries = savedHistory;
@@ -779,6 +827,24 @@
     expressionInput.focus();
     expressionInput.setSelectionRange(expressionInput.value.length, expressionInput.value.length);
     updateCaretSnapshot();
+    
+    // Listen for system theme changes
+    if (typeof window !== "undefined" && window.matchMedia) {
+      const darkModeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const handleThemeChange = async (e) => {
+        // Only auto-switch if user hasn't manually set a preference
+        const currentTheme = await window.CalculatorHistory.getTheme();
+        if (!currentTheme) {
+          await setTheme(e.matches ? "dark" : "light", false);
+        }
+      };
+      
+      if (darkModeQuery.addEventListener) {
+        darkModeQuery.addEventListener("change", handleThemeChange);
+      } else if (darkModeQuery.addListener) {
+        darkModeQuery.addListener(handleThemeChange);
+      }
+    }
   }
 
   modeMenuButton.addEventListener("click", () => {
@@ -804,6 +870,28 @@
 
   degreesAngleButton.addEventListener("click", async () => {
     await setAngleMode("deg");
+    closeSettingsMenu();
+  });
+
+  themeMenuButton.addEventListener("click", () => {
+    toggleThemeSubmenu();
+  });
+
+  lightThemeButton.addEventListener("click", async () => {
+    await setTheme("light");
+    closeThemeSubmenu();
+    closeSettingsMenu();
+  });
+
+  darkThemeButton.addEventListener("click", async () => {
+    await setTheme("dark");
+    closeThemeSubmenu();
+    closeSettingsMenu();
+  });
+
+  neutralThemeButton.addEventListener("click", async () => {
+    await setTheme("neutral");
+    closeThemeSubmenu();
     closeSettingsMenu();
   });
 
@@ -866,15 +954,23 @@
     }
 
     if (settingsMenu.contains(event.target) || settingsMenuButton.contains(event.target)) {
+      // Close theme submenu if clicking elsewhere in settings menu
+      if (themeSubmenu.classList.contains("open") && !themeSubmenu.contains(event.target) && !themeMenuButton.contains(event.target)) {
+        closeThemeSubmenu();
+      }
       return;
     }
 
     closeSettingsMenu();
+    closeThemeSubmenu();
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
-      if (modeMenu.classList.contains("open")) {
+      if (themeSubmenu.classList.contains("open")) {
+        closeThemeSubmenu();
+        themeMenuButton.focus();
+      } else if (modeMenu.classList.contains("open")) {
         closeModeMenu();
         modeMenuButton.focus();
       } else if (settingsMenu.classList.contains("open")) {

@@ -246,6 +246,7 @@ body.detached {
   font-size: 1rem;
   line-height: 1.35;
   background: transparent;
+  text-align: right;
 }
 
 #expressionInput:focus {

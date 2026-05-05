@@ -5,6 +5,7 @@
   const ANGLE_MODE_KEY = "typedCalcAngleMode";
   const GRAPH_SETTINGS_KEY = "typedCalcGraphSettings";
   const EXPRESSION_DRAFT_KEY = "typedCalcExpressionDraft";
+  const NUMBER_FORMAT_KEY = "typedCalcNumberFormat";
   const DEFAULT_LIMIT = 80;
 
   function getStorage() {
@@ -88,6 +89,72 @@
     });
   }
 
+  function getNumberFormatSettings() {
+    const defaults = {
+      significantDigits: 12,
+      sciNotationMagnitude: 6,
+      notationStyle: "e"
+    };
+
+    return new Promise((resolve) => {
+      getStorage().get([NUMBER_FORMAT_KEY], (payload) => {
+        const settings = payload[NUMBER_FORMAT_KEY];
+        if (!settings || typeof settings !== "object") {
+          resolve(defaults);
+          return;
+        }
+
+        // Validate and use stored settings or fall back to defaults
+        resolve({
+          significantDigits: 
+            Number.isInteger(settings.significantDigits) && 
+            settings.significantDigits >= 3 && 
+            settings.significantDigits <= 12
+              ? settings.significantDigits
+              : defaults.significantDigits,
+          sciNotationMagnitude:
+            Number.isInteger(settings.sciNotationMagnitude) &&
+            settings.sciNotationMagnitude >= 3 &&
+            settings.sciNotationMagnitude <= 20
+              ? settings.sciNotationMagnitude
+              : defaults.sciNotationMagnitude,
+          notationStyle:
+            settings.notationStyle === "e" || settings.notationStyle === "times10"
+              ? settings.notationStyle
+              : defaults.notationStyle
+        });
+      });
+    });
+  }
+
+  function setNumberFormatSettings(settings) {
+    const defaults = {
+      significantDigits: 12,
+      sciNotationMagnitude: 6,
+      notationStyle: "e"
+    };
+
+    // Validate and clamp values
+    const safeSettings = {
+      significantDigits:
+        Number.isInteger(settings.significantDigits)
+          ? Math.max(3, Math.min(12, settings.significantDigits))
+          : defaults.significantDigits,
+      sciNotationMagnitude:
+        Number.isInteger(settings.sciNotationMagnitude)
+          ? Math.max(3, Math.min(20, settings.sciNotationMagnitude))
+          : defaults.sciNotationMagnitude,
+      notationStyle:
+        settings.notationStyle === "e" || settings.notationStyle === "times10"
+          ? settings.notationStyle
+          : defaults.notationStyle
+    };
+
+    return new Promise((resolve) => {
+      getStorage().set({ [NUMBER_FORMAT_KEY]: safeSettings }, () => resolve(safeSettings));
+    });
+  }
+
   window.CalculatorHistory = {
     getHistory,
     addHistoryEntry,
@@ -97,6 +164,8 @@
     getGraphSettings,
     setGraphSettings,
     getExpressionDraft,
-    setExpressionDraft
+    setExpressionDraft,
+    getNumberFormatSettings,
+    setNumberFormatSettings
   };
 })();

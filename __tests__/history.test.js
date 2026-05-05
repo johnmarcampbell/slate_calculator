@@ -120,4 +120,82 @@ describe("CalculatorHistory", () => {
 
     await expect(history.getHistory()).rejects.toThrow("chrome.storage.local is unavailable");
   });
+
+  test("number format settings defaults with all required fields", async () => {
+    attachChromeStorage();
+    const history = loadHistory();
+
+    const defaults = await history.getNumberFormatSettings();
+    expect(defaults).toEqual({
+      significantDigits: 12,
+      sciNotationMagnitude: 6,
+      notationStyle: "e"
+    });
+  });
+
+  test("number format settings roundtrip with valid object", async () => {
+    attachChromeStorage();
+    const history = loadHistory();
+
+    const settings = {
+      significantDigits: 6,
+      sciNotationMagnitude: 9,
+      notationStyle: "times10"
+    };
+
+    await expect(history.setNumberFormatSettings(settings)).resolves.toEqual(settings);
+    await expect(history.getNumberFormatSettings()).resolves.toEqual(settings);
+  });
+
+  test("number format settings clamps significantDigits to valid range", async () => {
+    attachChromeStorage();
+    const history = loadHistory();
+
+    const tooLow = { significantDigits: 1, sciNotationMagnitude: 6, notationStyle: "e" };
+    await history.setNumberFormatSettings(tooLow);
+    const resultLow = await history.getNumberFormatSettings();
+    expect(resultLow.significantDigits).toBe(3);
+
+    const tooHigh = { significantDigits: 20, sciNotationMagnitude: 6, notationStyle: "e" };
+    await history.setNumberFormatSettings(tooHigh);
+    const resultHigh = await history.getNumberFormatSettings();
+    expect(resultHigh.significantDigits).toBe(12);
+  });
+
+  test("number format settings clamps sciNotationMagnitude to valid range", async () => {
+    attachChromeStorage();
+    const history = loadHistory();
+
+    const tooLow = { significantDigits: 6, sciNotationMagnitude: 1, notationStyle: "e" };
+    await history.setNumberFormatSettings(tooLow);
+    const resultLow = await history.getNumberFormatSettings();
+    expect(resultLow.sciNotationMagnitude).toBe(3);
+
+    const tooHigh = { significantDigits: 6, sciNotationMagnitude: 25, notationStyle: "e" };
+    await history.setNumberFormatSettings(tooHigh);
+    const resultHigh = await history.getNumberFormatSettings();
+    expect(resultHigh.sciNotationMagnitude).toBe(20);
+  });
+
+  test("number format settings validates notationStyle", async () => {
+    attachChromeStorage();
+    const history = loadHistory();
+
+    const invalid = { significantDigits: 6, sciNotationMagnitude: 6, notationStyle: "invalid" };
+    await history.setNumberFormatSettings(invalid);
+    const result = await history.getNumberFormatSettings();
+    expect(result.notationStyle).toBe("e");
+  });
+
+  test("number format settings returns defaults for invalid payload", async () => {
+    attachChromeStorage({ typedCalcNumberFormat: "bad" });
+    const history = loadHistory();
+
+    const result = await history.getNumberFormatSettings();
+    expect(result).toEqual({
+      significantDigits: 12,
+      sciNotationMagnitude: 6,
+      notationStyle: "e"
+    });
+  });
 });

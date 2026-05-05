@@ -17,6 +17,7 @@
   let historyEntries = [];
   let activeView = "calculator";
   let graphSettings = Object.assign({}, DEFAULT_GRAPH_SETTINGS);
+  let numberFormatSettings = { significantDigits: 12, sciNotationMagnitude: 6, notationStyle: "e" };
   let previewTimer = null;
   let graphPreviewTimer = null;
   let draftSaveQueue = Promise.resolve();
@@ -41,6 +42,21 @@
   const degreesAngleButton = document.getElementById("degreesAngleButton");
   const calculatorView = document.getElementById("calculatorView");
   const graphView = document.getElementById("graphView");
+
+  const numberFormatButton = document.getElementById("numberFormatButton");
+  const numberFormatPanel = document.getElementById("numberFormatPanel");
+  const sigDigitsSlider = document.getElementById("sigDigitsSlider");
+  const sigDigitsValue = document.getElementById("sigDigitsValue");
+  const magnitudeSlider = document.getElementById("magnitudeSlider");
+  const magnitudeValue = document.getElementById("magnitudeValue");
+  const notationStyleE = document.getElementById("notationStyleE");
+  const notationStyleTimes10 = document.getElementById("notationStyleTimes10");
+  const previewTiny = document.getElementById("previewTiny");
+  const previewSmall = document.getElementById("previewSmall");
+  const previewInteger = document.getElementById("previewInteger");
+  const previewLarge = document.getElementById("previewLarge");
+  const previewHuge = document.getElementById("previewHuge");
+  const previewPi = document.getElementById("previewPi");
 
   const graphExpressionInput = document.getElementById("graphExpressionInput");
   const xMinInput = document.getElementById("xMinInput");
@@ -78,24 +94,33 @@
   }
 
   function formatResult(value) {
-    if (!Number.isFinite(value)) {
-      return "Error: Result is not finite";
-    }
+    // Use the formatter module with current settings
+    return window.CalculatorFormatter.formatResult(value, numberFormatSettings);
+  }
 
-    if (Object.is(value, -0)) {
-      return "0";
+  function formatResultParseable(value) {
+    // Format a number to a parseable string respecting user's notation preference
+    const formatted = window.CalculatorFormatter.formatResult(value, numberFormatSettings);
+    
+    if (typeof formatted === "object" && formatted !== null && formatted.text) {
+      // times10 notation: convert "×10^" to "*10^" to make it parseable
+      return formatted.text.replace(/×/g, "*");
     }
-
-    const absValue = Math.abs(value);
-    if (absValue !== 0 && (absValue >= 1e10 || absValue < 1e-6)) {
-      return value.toExponential(9);
-    }
-
-    return Number(value.toPrecision(12)).toString();
+    
+    // For "e" notation or plain numbers, it's already parseable
+    return formatted;
   }
 
   function setResultMessage(message, isError) {
-    resultText.textContent = message;
+    // Handle both string messages and formatted objects (for times10 notation)
+    if (typeof message === "object" && message !== null && message.html) {
+      // times10 notation - use HTML
+      resultText.innerHTML = message.html;
+    } else {
+      // Regular string or e notation - use textContent for safety
+      resultText.textContent = message;
+    }
+    
     resultText.classList.toggle("error", Boolean(isError));
     resultText.classList.toggle("success", !isError);
     expressionInput.classList.toggle("error", Boolean(isError));
@@ -104,6 +129,55 @@
   function setGraphStatus(message, isError) {
     graphStatusText.textContent = message;
     graphStatusText.classList.toggle("error", Boolean(isError));
+  }
+
+  function toggleNumberFormatPanel() {
+    const isOpen = numberFormatPanel.classList.toggle("open");
+    numberFormatPanel.setAttribute("aria-hidden", String(!isOpen));
+    if (isOpen) {
+      updatePreview();
+    }
+    closeModeMenu();
+  }
+
+  function updateNumberFormatUIFromSettings() {
+    sigDigitsSlider.value = numberFormatSettings.significantDigits;
+    sigDigitsValue.textContent = numberFormatSettings.significantDigits;
+    magnitudeSlider.value = numberFormatSettings.sciNotationMagnitude;
+    magnitudeValue.textContent = numberFormatSettings.sciNotationMagnitude;
+    
+    if (numberFormatSettings.notationStyle === "times10") {
+      notationStyleTimes10.checked = true;
+    } else {
+      notationStyleE.checked = true;
+    }
+  }
+
+  async function saveNumberFormatSettings() {
+    await window.CalculatorHistory.setNumberFormatSettings(numberFormatSettings);
+  }
+
+  function updatePreview() {
+    const testValues = [
+      { id: previewTiny, value: 0.00000453245 },
+      { id: previewSmall, value: 0.123456789 },
+      { id: previewInteger, value: 42 },
+      { id: previewLarge, value: 123456789012 },
+      { id: previewHuge, value: 9.87654321e25 },
+      { id: previewPi, value: 3.14159265359 }
+    ];
+
+    testValues.forEach(({ id, value }) => {
+      const formatted = window.CalculatorFormatter.formatResult(value, numberFormatSettings);
+      
+      if (typeof formatted === "object" && formatted.html) {
+        // times10 notation - use HTML
+        id.innerHTML = formatted.html;
+      } else {
+        // Regular string or e notation
+        id.textContent = formatted;
+      }
+    });
   }
 
   function sanitizeGraphSettings(settings) {
@@ -543,11 +617,16 @@
     hasShownValidResult = true;
     lastValidResultText = formatted;
 
+    // Extract text representation for storage (handles both string and object formats)
+    const textForStorage = typeof formatted === "object" && formatted !== null && formatted.text
+      ? formatted.text
+      : formatted;
+
     return {
       expression,
       normalizedExpression: evaluation.normalized,
       resultValue: evaluation.value,
-      resultText: formatted,
+      resultText: textForStorage,
       angleMode,
       ts: Date.now()
     };
@@ -613,10 +692,13 @@
     resultButton.title = "Insert result at cursor";
     resultButton.textContent = "= " + entry.resultText;
     resultButton.addEventListener("click", () => {
-      insertTextAtCaret(entry.resultText);
+      // Format the value in user's preferred notation as a parseable expression
+      const parseableValue = formatResultParseable(entry.resultValue);
+      insertTextAtCaret(parseableValue);
     });
     resultLine.appendChild(resultButton);
-    resultLine.appendChild(createCopyButton(entry.resultText));
+    // Copy button should also use parseable value in user's preferred format
+    resultLine.appendChild(createCopyButton(formatResultParseable(entry.resultValue)));
 
     item.appendChild(expressionLine);
     item.appendChild(resultLine);
@@ -645,17 +727,21 @@
       document.body.classList.add("detached");
     }
 
-    const [savedAngleMode, savedHistory, savedGraphSettings, savedDraft] = await Promise.all([
+    const [savedAngleMode, savedHistory, savedGraphSettings, savedDraft, savedNumberFormat] = await Promise.all([
       window.CalculatorHistory.getAngleMode(),
       window.CalculatorHistory.getHistory(),
       window.CalculatorHistory.getGraphSettings(),
-      window.CalculatorHistory.getExpressionDraft()
+      window.CalculatorHistory.getExpressionDraft(),
+      window.CalculatorHistory.getNumberFormatSettings()
     ]);
 
     await setAngleMode(savedAngleMode, false);
 
     historyEntries = savedHistory;
     renderHistory();
+
+    numberFormatSettings = savedNumberFormat;
+    updateNumberFormatUIFromSettings();
 
     graphSettings = sanitizeGraphSettings(savedGraphSettings || DEFAULT_GRAPH_SETTINGS);
     updateGraphInputsFromState();
@@ -694,6 +780,42 @@
     closeModeMenu();
   });
 
+  numberFormatButton.addEventListener("click", () => {
+    toggleNumberFormatPanel();
+  });
+
+  sigDigitsSlider.addEventListener("input", () => {
+    const value = parseInt(sigDigitsSlider.value, 10);
+    sigDigitsValue.textContent = value;
+    numberFormatSettings.significantDigits = value;
+    updatePreview();
+    saveNumberFormatSettings();
+  });
+
+  magnitudeSlider.addEventListener("input", () => {
+    const value = parseInt(magnitudeSlider.value, 10);
+    magnitudeValue.textContent = value;
+    numberFormatSettings.sciNotationMagnitude = value;
+    updatePreview();
+    saveNumberFormatSettings();
+  });
+
+  notationStyleE.addEventListener("change", () => {
+    if (notationStyleE.checked) {
+      numberFormatSettings.notationStyle = "e";
+      updatePreview();
+      saveNumberFormatSettings();
+    }
+  });
+
+  notationStyleTimes10.addEventListener("change", () => {
+    if (notationStyleTimes10.checked) {
+      numberFormatSettings.notationStyle = "times10";
+      updatePreview();
+      saveNumberFormatSettings();
+    }
+  });
+
   document.addEventListener("click", (event) => {
     if (!modeMenu.classList.contains("open")) {
       return;
@@ -707,10 +829,29 @@
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && modeMenu.classList.contains("open")) {
-      closeModeMenu();
-      modeMenuButton.focus();
+    if (event.key === "Escape") {
+      if (modeMenu.classList.contains("open")) {
+        closeModeMenu();
+        modeMenuButton.focus();
+      } else if (numberFormatPanel.classList.contains("open")) {
+        numberFormatPanel.classList.remove("open");
+        numberFormatPanel.setAttribute("aria-hidden", "true");
+        numberFormatButton.focus();
+      }
     }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!numberFormatPanel.classList.contains("open")) {
+      return;
+    }
+
+    if (numberFormatPanel.contains(event.target) || numberFormatButton.contains(event.target)) {
+      return;
+    }
+
+    numberFormatPanel.classList.remove("open");
+    numberFormatPanel.setAttribute("aria-hidden", "true");
   });
 
   clearHistoryButton.addEventListener("click", async () => {

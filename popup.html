@@ -35,6 +35,13 @@
                 <span class="mode-check" aria-hidden="true">✓</span>
                 <span>Degrees</span>
               </button>
+              <div class="mode-menu-divider" aria-hidden="true"></div>
+              <button id="numberFormatButton" type="button" class="mode-menu-item" role="menuitem">
+                <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                </svg>
+                <span>Number Format...</span>
+              </button>
             </div>
           </div>
           <button id="popoutButton" type="button" class="ghost-button icon-button topbar-button" aria-label="Pop out" title="Pop out">
@@ -44,6 +51,104 @@
           </button>
         </div>
       </header>
+
+      <section id="numberFormatPanel" class="settings-panel" aria-label="Number format settings" aria-hidden="true">
+        <div class="settings-content">
+          <h2 class="settings-title">Number Format Settings</h2>
+          
+          <div class="settings-group">
+            <label for="sigDigitsSlider" class="settings-label">
+              Significant Digits: <span id="sigDigitsValue" class="settings-value">12</span>
+            </label>
+            <input 
+              id="sigDigitsSlider" 
+              type="range" 
+              min="3" 
+              max="12" 
+              value="12" 
+              step="1"
+              class="settings-slider"
+              aria-valuemin="3"
+              aria-valuemax="12"
+              aria-valuenow="12"
+            />
+          </div>
+
+          <div class="settings-group">
+            <label for="magnitudeSlider" class="settings-label">
+              Scientific Notation Magnitude: <span id="magnitudeValue" class="settings-value">6</span>
+              <span class="settings-hint">(use sci notation for ≥10<sup>n</sup> or &lt;10<sup>-n</sup>)</span>
+            </label>
+            <input 
+              id="magnitudeSlider" 
+              type="range" 
+              min="3" 
+              max="20" 
+              value="6" 
+              step="1"
+              class="settings-slider"
+              aria-valuemin="3"
+              aria-valuemax="20"
+              aria-valuenow="6"
+            />
+          </div>
+
+          <div class="settings-group">
+            <fieldset class="settings-radio-group">
+              <legend class="settings-label">Scientific Notation Style:</legend>
+              <label class="radio-label">
+                <input 
+                  id="notationStyleE" 
+                  type="radio" 
+                  name="notationStyle" 
+                  value="e" 
+                  checked
+                />
+                <span>Exponential (e.g., 3.14e2)</span>
+              </label>
+              <label class="radio-label">
+                <input 
+                  id="notationStyleTimes10" 
+                  type="radio" 
+                  name="notationStyle" 
+                  value="times10"
+                />
+                <span>Times 10 (e.g., 3.14×10<sup>2</sup>)</span>
+              </label>
+            </fieldset>
+          </div>
+
+          <div class="settings-group">
+            <h3 class="settings-label">Preview:</h3>
+            <div id="previewContainer" class="preview-container">
+              <div class="preview-item">
+                <span class="preview-label">Tiny:</span>
+                <span id="previewTiny" class="preview-value">0.00000453245</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">Small:</span>
+                <span id="previewSmall" class="preview-value">0.123456789</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">Integer:</span>
+                <span id="previewInteger" class="preview-value">42</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">Large:</span>
+                <span id="previewLarge" class="preview-value">123456789012</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">Huge:</span>
+                <span id="previewHuge" class="preview-value">9.87654321e25</span>
+              </div>
+              <div class="preview-item">
+                <span class="preview-label">Pi:</span>
+                <span id="previewPi" class="preview-value">3.14159265359</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section id="calculatorView" class="view-panel" aria-label="Calculator view">
 
@@ -116,6 +221,7 @@
     <script src="lib/jsep.iife.min.js"></script>
     <script src="evaluator.js"></script>
     <script src="history.js"></script>
+    <script src="formatter.js"></script>
     <script src="grapher.js"></script>
     <script src="popup.js"></script>
   </body>

@@ -8,6 +8,7 @@ module.exports = {
     "evaluator.js",
     "history.js",
     "grapher.js",
+    "formatter.js",
     "!lib/**"
   ]
 };

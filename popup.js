@@ -30,6 +30,7 @@
   const isDetachedWindow = new URLSearchParams(window.location.search).get("detached") === "1";
 
   const expressionInput = document.getElementById("expressionInput");
+  const calculationPanel = expressionInput.closest(".calculation-panel");
   const resultText = document.getElementById("resultText");
   const historyList = document.getElementById("historyList");
   const clearHistoryButton = document.getElementById("clearHistoryButton");
@@ -126,7 +127,7 @@
     
     resultText.classList.toggle("error", Boolean(isError));
     resultText.classList.toggle("success", !isError);
-    expressionInput.classList.toggle("error", Boolean(isError));
+    calculationPanel.classList.toggle("error", Boolean(isError));
   }
 
   function setGraphStatus(message, isError) {
@@ -660,8 +661,8 @@
       if (!expressionInput.value.trim()) {
         hasShownValidResult = false;
         lastValidResultText = "";
-        setResultMessage("Type an expression to begin", false);
-        expressionInput.classList.remove("error");
+        setResultMessage("", false);
+        calculationPanel.classList.remove("error");
         return;
       }
       evaluateCurrentExpression(false);
@@ -681,7 +682,7 @@
     expressionInput.value = "";
     hasShownValidResult = false;
     lastValidResultText = "";
-    setResultMessage("Type an expression to begin", false);
+    setResultMessage("", false);
     expressionInput.focus();
     expressionInput.setSelectionRange(0, 0);
     updateCaretSnapshot();

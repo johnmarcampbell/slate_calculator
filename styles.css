@@ -137,8 +137,6 @@ body.detached {
   background: rgba(249, 234, 215, 0.35);
 }
 
-.input-panel,
-.result-panel,
 .history-panel,
 .graph-controls-panel,
 .graph-canvas-panel {
@@ -147,6 +145,15 @@ body.detached {
   border-radius: 12px;
   padding: 10px;
   backdrop-filter: blur(1px);
+}
+
+.calculation-panel {
+  background: var(--panel);
+  border: 2px solid rgba(31, 31, 31, 0.25);
+  border-radius: 12px;
+  padding: var(--space-md);
+  backdrop-filter: blur(1px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .graph-label {
@@ -231,56 +238,38 @@ body.detached {
 
 #expressionInput {
   width: 100%;
-  resize: vertical;
-  min-height: 60px;
-  max-height: 110px;
+  resize: none;
   border-radius: 10px;
-  border: 1px solid var(--border);
-  padding: 8px 10px;
+  border: none;
+  padding: var(--space-sm) 0;
   font-family: "Courier New", Courier, monospace;
-  font-size: 0.95rem;
+  font-size: 1rem;
   line-height: 1.35;
+  background: transparent;
 }
 
 #expressionInput:focus {
-  border-color: var(--accent);
-  outline: 2px solid rgba(184, 74, 45, 0.22);
+  outline: none;
 }
 
-#expressionInput.error {
+.calculation-panel.error {
   border-color: var(--bad);
-  outline: 2px solid rgba(177, 37, 37, 0.15);
 }
 
-.hint {
-  margin: 6px 0 0;
-  font-size: 0.74rem;
-  color: var(--muted);
-}
-
-.hint.error {
-  color: var(--bad);
-}
-
-.result-label {
-  margin: 0;
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
+.result-display {
+  margin-top: var(--space-sm);
 }
 
 .result-value {
-  margin: 5px 0 0;
-  font-size: 1.12rem;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
   line-height: 1.3;
   min-height: 1.3em;
   font-family: "Courier New", Courier, monospace;
   word-break: break-word;
-}
-
-.result-value.success {
-  color: var(--ok);
+  color: #000;
+  text-align: right;
 }
 
 .result-value.error {
@@ -314,8 +303,8 @@ body.detached {
 }
 
 .icon-button {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -323,19 +312,20 @@ body.detached {
 }
 
 .icon-button svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   fill: currentColor;
 }
 
 .topbar-button {
-  background: rgba(10, 10, 10, 0.35);
-  border-color: rgba(249, 234, 215, 0.45);
-  color: #fff;
+  background: rgba(10, 10, 10, 0.2);
+  border-color: rgba(249, 234, 215, 0.3);
+  color: rgba(249, 234, 215, 0.9);
 }
 
 .topbar-button:hover {
-  border-color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(10, 10, 10, 0.3);
   color: #fff;
 }
 

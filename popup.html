@@ -164,20 +164,18 @@
 
       <section id="calculatorView" class="view-panel" aria-label="Calculator view">
 
-        <section class="input-panel">
+        <section class="calculation-panel">
           <label class="visually-hidden" for="expressionInput">Expression</label>
           <textarea
             id="expressionInput"
-            rows="2"
+            rows="1"
             spellcheck="false"
-            placeholder="Try e^2, sin(pi), or log10(100)"
+            placeholder="1+2+3..."
           ></textarea>
-          <p id="hint" class="hint">Press Enter to save in history. Shift+Enter for newline.</p>
-        </section>
-
-        <section class="result-panel" aria-live="polite">
-          <p class="result-label">Result</p>
-          <p id="resultText" class="result-value">Type an expression to begin</p>
+          
+          <div class="result-display" aria-live="polite">
+            <p id="resultText" class="result-value"></p>
+          </div>
         </section>
 
         <section class="history-panel" aria-label="Calculation history">

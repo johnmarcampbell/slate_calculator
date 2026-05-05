@@ -443,10 +443,20 @@ body.detached #popoutButton {
   gap: 16px;
 }
 
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .settings-title {
   margin: 0;
   font-size: 1rem;
   color: var(--ink);
+}
+
+.settings-close-button {
+  flex-shrink: 0;
 }
 
 .settings-group {

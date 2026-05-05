@@ -45,6 +45,7 @@
 
   const numberFormatButton = document.getElementById("numberFormatButton");
   const numberFormatPanel = document.getElementById("numberFormatPanel");
+  const numberFormatCloseButton = document.getElementById("numberFormatCloseButton");
   const sigDigitsSlider = document.getElementById("sigDigitsSlider");
   const sigDigitsValue = document.getElementById("sigDigitsValue");
   const magnitudeSlider = document.getElementById("magnitudeSlider");
@@ -782,6 +783,11 @@
 
   numberFormatButton.addEventListener("click", () => {
     toggleNumberFormatPanel();
+  });
+
+  numberFormatCloseButton.addEventListener("click", () => {
+    numberFormatPanel.classList.remove("open");
+    numberFormatPanel.setAttribute("aria-hidden", "true");
   });
 
   sigDigitsSlider.addEventListener("input", () => {

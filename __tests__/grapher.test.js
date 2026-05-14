@@ -17,6 +17,51 @@ function createGraph(evaluateAtX, width, height) {
 }
 
 describe("CalculatorGrapher", () => {
+  test("draw uses theme colors for grid and axes", () => {
+    document.documentElement.style.setProperty("--graph-grid-color", "rgba(240, 240, 240, 0.24)");
+    document.documentElement.style.setProperty("--graph-axis-color", "rgba(240, 240, 240, 0.5)");
+    document.documentElement.style.setProperty("--graph-label-color", "rgba(240, 240, 240, 0.8)");
+
+    const { graph, canvas } = createGraph((expr, x) => ({ ok: true, value: x }), 300, 150);
+    const context = canvas.getContext("2d");
+    const assignedStrokeStyles = [];
+    const assignedFillStyles = [];
+
+    Object.defineProperty(context, "strokeStyle", {
+      configurable: true,
+      enumerable: true,
+      set(value) {
+        this._strokeStyle = value;
+        assignedStrokeStyles.push(value);
+      },
+      get() {
+        return this._strokeStyle;
+      }
+    });
+
+    Object.defineProperty(context, "fillStyle", {
+      configurable: true,
+      enumerable: true,
+      set(value) {
+        this._fillStyle = value;
+        assignedFillStyles.push(value);
+      },
+      get() {
+        return this._fillStyle;
+      }
+    });
+
+    graph.draw();
+
+    expect(assignedStrokeStyles).toContain("rgba(240, 240, 240, 0.24)");
+    expect(assignedStrokeStyles).toContain("rgba(240, 240, 240, 0.5)");
+    expect(assignedFillStyles).toContain("rgba(240, 240, 240, 0.8)");
+
+    document.documentElement.style.removeProperty("--graph-grid-color");
+    document.documentElement.style.removeProperty("--graph-axis-color");
+    document.documentElement.style.removeProperty("--graph-label-color");
+  });
+
   test("draw returns idle state for empty expression", () => {
     const { graph } = createGraph(() => ({ ok: true, value: 0 }));
 

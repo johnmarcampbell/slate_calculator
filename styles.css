@@ -37,6 +37,9 @@
   --button-border: rgba(117, 113, 94, 0.4);
   --input-bg: rgba(52, 54, 46, 0.6);
   --canvas-bg: rgba(52, 54, 46, 0.95);
+  --graph-grid-color: rgba(248, 248, 242, 0.2);
+  --graph-axis-color: rgba(248, 248, 242, 0.48);
+  --graph-label-color: rgba(248, 248, 242, 0.78);
   --result-text: #a6e22e;
 }
 
@@ -68,6 +71,9 @@
   --button-border: rgba(0, 0, 0, 0.12);
   --input-bg: #ffffff;
   --canvas-bg: rgba(250, 250, 250, 0.95);
+  --graph-grid-color: rgba(31, 31, 31, 0.12);
+  --graph-axis-color: rgba(31, 31, 31, 0.45);
+  --graph-label-color: rgba(31, 31, 31, 0.6);
   --result-text: #1a1a1a;
 }
 
@@ -99,6 +105,9 @@
   --button-border: rgba(140, 130, 110, 0.5);
   --input-bg: transparent;
   --canvas-bg: radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.85) 0%, rgba(245, 241, 233, 0.95) 100%);
+  --graph-grid-color: rgba(31, 31, 31, 0.14);
+  --graph-axis-color: rgba(31, 31, 31, 0.4);
+  --graph-label-color: rgba(31, 31, 31, 0.62);
   --result-text: #000000;
 }
 

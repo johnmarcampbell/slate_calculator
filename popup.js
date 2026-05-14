@@ -355,7 +355,7 @@
     }
   }
 
-  function setActiveView(viewName) {
+  function setActiveView(viewName, shouldPersist) {
     activeView = viewName === "graph" ? "graph" : "calculator";
     const graphActive = activeView === "graph";
 
@@ -378,6 +378,12 @@
     } else {
       expressionInput.focus();
       updateCaretSnapshot();
+    }
+
+    if (shouldPersist !== false) {
+      window.CalculatorHistory.setActiveView(activeView).catch((error) => {
+        console.error("Failed to persist active view", error);
+      });
     }
   }
 
@@ -796,13 +802,14 @@
       document.body.classList.add("detached");
     }
 
-    const [savedAngleMode, savedHistory, savedGraphSettings, savedDraft, savedNumberFormat, savedTheme] = await Promise.all([
+    const [savedAngleMode, savedHistory, savedGraphSettings, savedDraft, savedNumberFormat, savedTheme, savedActiveView] = await Promise.all([
       window.CalculatorHistory.getAngleMode(),
       window.CalculatorHistory.getHistory(),
       window.CalculatorHistory.getGraphSettings(),
       window.CalculatorHistory.getExpressionDraft(),
       window.CalculatorHistory.getNumberFormatSettings(),
-      window.CalculatorHistory.getTheme()
+      window.CalculatorHistory.getTheme(),
+      window.CalculatorHistory.getActiveView()
     ]);
 
     await setTheme(savedTheme, false);
@@ -824,9 +831,7 @@
       evaluateCurrentExpression(false);
     }
 
-    expressionInput.focus();
-    expressionInput.setSelectionRange(expressionInput.value.length, expressionInput.value.length);
-    updateCaretSnapshot();
+    setActiveView(savedActiveView, false);
     
     // Listen for system theme changes
     if (typeof window !== "undefined" && window.matchMedia) {

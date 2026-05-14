@@ -74,6 +74,23 @@ describe("CalculatorHistory", () => {
     await expect(history.getAngleMode()).resolves.toBe("rad");
   });
 
+  test("active view defaults to calculator and persists graph", async () => {
+    attachChromeStorage();
+    const history = loadHistory();
+
+    await expect(history.getActiveView()).resolves.toBe("calculator");
+    await expect(history.setActiveView("graph")).resolves.toBe("graph");
+    await expect(history.getActiveView()).resolves.toBe("graph");
+  });
+
+  test("invalid active view persists as calculator", async () => {
+    attachChromeStorage();
+    const history = loadHistory();
+
+    await expect(history.setActiveView("invalid")).resolves.toBe("calculator");
+    await expect(history.getActiveView()).resolves.toBe("calculator");
+  });
+
   test("graph settings roundtrip with object", async () => {
     attachChromeStorage();
     const history = loadHistory();

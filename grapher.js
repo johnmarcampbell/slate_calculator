@@ -44,6 +44,16 @@
     const ctx = canvas.getContext("2d");
     const evaluateAtX = options.evaluateAtX;
 
+    function getThemeColor(variableName, fallback) {
+      if (typeof document === "undefined" || !document.documentElement || typeof window.getComputedStyle !== "function") {
+        return fallback;
+      }
+
+      const value = window.getComputedStyle(document.documentElement).getPropertyValue(variableName);
+      const trimmed = String(value || "").trim();
+      return trimmed || fallback;
+    }
+
     const state = {
       expression: "",
       xMin: -10,
@@ -83,17 +93,27 @@
       return { x, y };
     }
 
-    function drawGrid(width, height) {
+    function drawGrid(width, height, dpr) {
       const xRange = state.xMax - state.xMin;
       const yRange = state.yMax - state.yMin;
       const xStep = chooseTickStep(xRange);
       const yStep = chooseTickStep(yRange);
+      const gridColor = getThemeColor("--graph-grid-color", "rgba(31, 31, 31, 0.12)");
+      const axisColor = getThemeColor("--graph-axis-color", "rgba(31, 31, 31, 0.45)");
+      const labelColor = getThemeColor("--graph-label-color", "rgba(31, 31, 31, 0.6)");
+      const scale = Number.isFinite(dpr) && dpr > 0 ? dpr : 1;
+      const labelFontSize = Math.round(12 * scale);
+      const pad = 4 * scale;
+      const bottomPad = 6 * scale;
+      const topBaseline = 12 * scale;
+      const lowerBaseline = 18 * scale;
+      const rightLabelOffset = 58 * scale;
 
       ctx.save();
       ctx.lineWidth = 1;
-      ctx.strokeStyle = "rgba(31, 31, 31, 0.12)";
-      ctx.fillStyle = "rgba(31, 31, 31, 0.6)";
-      ctx.font = "10px Courier New";
+      ctx.strokeStyle = gridColor;
+      ctx.fillStyle = labelColor;
+      ctx.font = labelFontSize + "px Courier New";
 
       const xStart = Math.ceil(state.xMin / xStep) * xStep;
       for (let x = xStart; x <= state.xMax; x += xStep) {
@@ -116,7 +136,7 @@
       const xAxisPy = worldToScreenY(0, height);
       const yAxisPx = worldToScreenX(0, width);
 
-      ctx.strokeStyle = "rgba(31, 31, 31, 0.45)";
+      ctx.strokeStyle = axisColor;
       ctx.lineWidth = 1.35;
 
       if (xAxisPy >= 0 && xAxisPy <= height) {
@@ -133,10 +153,10 @@
         ctx.stroke();
       }
 
-      ctx.fillText(roundLabel(state.xMin), 4, height - 6);
-      ctx.fillText(roundLabel(state.xMax), width - 48, height - 6);
-      ctx.fillText(roundLabel(state.yMax), 4, 12);
-      ctx.fillText(roundLabel(state.yMin), 4, height - 18);
+      ctx.fillText(roundLabel(state.xMin), pad, height - bottomPad);
+      ctx.fillText(roundLabel(state.xMax), width - rightLabelOffset, height - bottomPad);
+      ctx.fillText(roundLabel(state.yMax), pad, topBaseline);
+      ctx.fillText(roundLabel(state.yMin), pad, height - lowerBaseline);
       ctx.restore();
     }
 
@@ -273,9 +293,9 @@
     }
 
     function renderFromSampledSeries() {
-      const { width, height } = getCanvasSize();
+      const { width, height, dpr } = getCanvasSize();
       ctx.clearRect(0, 0, width, height);
-      drawGrid(width, height);
+      drawGrid(width, height, dpr);
 
       const hasPlot = plotSamples(state.sampledSeries, width, height);
       if (state.hoverPoint) {
@@ -288,7 +308,7 @@
     }
 
     function draw() {
-      const { width, height } = getCanvasSize();
+      const { width, height, dpr } = getCanvasSize();
 
       if (!Number.isFinite(state.xMin) || !Number.isFinite(state.xMax) || state.xMax - state.xMin < MIN_RANGE) {
         state.status = "Invalid x range";
@@ -299,7 +319,7 @@
       }
 
       ctx.clearRect(0, 0, width, height);
-      drawGrid(width, height);
+      drawGrid(width, height, dpr);
 
       const trimmedExpression = String(state.expression || "").trim();
       if (!trimmedExpression) {

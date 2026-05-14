@@ -3,6 +3,7 @@
 
   const HISTORY_KEY = "typedCalcHistory";
   const ANGLE_MODE_KEY = "typedCalcAngleMode";
+  const ACTIVE_VIEW_KEY = "typedCalcActiveView";
   const GRAPH_SETTINGS_KEY = "typedCalcGraphSettings";
   const EXPRESSION_DRAFT_KEY = "typedCalcExpressionDraft";
   const NUMBER_FORMAT_KEY = "typedCalcNumberFormat";
@@ -55,6 +56,21 @@
     const safeMode = mode === "deg" ? "deg" : "rad";
     return new Promise((resolve) => {
       getStorage().set({ [ANGLE_MODE_KEY]: safeMode }, () => resolve(safeMode));
+    });
+  }
+
+  function getActiveView() {
+    return new Promise((resolve) => {
+      getStorage().get([ACTIVE_VIEW_KEY], (payload) => {
+        resolve(payload[ACTIVE_VIEW_KEY] === "graph" ? "graph" : "calculator");
+      });
+    });
+  }
+
+  function setActiveView(view) {
+    const safeView = view === "graph" ? "graph" : "calculator";
+    return new Promise((resolve) => {
+      getStorage().set({ [ACTIVE_VIEW_KEY]: safeView }, () => resolve(safeView));
     });
   }
 
@@ -192,6 +208,8 @@
     clearHistory,
     getAngleMode,
     setAngleMode,
+    getActiveView,
+    setActiveView,
     getGraphSettings,
     setGraphSettings,
     getExpressionDraft,

@@ -29,6 +29,8 @@
   let dragState = null;
   const isDetachedWindow = new URLSearchParams(window.location.search).get("detached") === "1";
 
+  // --- DOM refs ---
+
   const expressionInput = document.getElementById("expressionInput");
   const calculationPanel = expressionInput.closest(".calculation-panel");
   const resultText = document.getElementById("resultText");
@@ -79,6 +81,54 @@
   const graphRedrawButton = document.getElementById("graphRedrawButton");
   const graphResetButton = document.getElementById("graphResetButton");
 
+  // --- Formatting helpers ---
+
+  // Renders a formatter result (string or {html, text} object) into a DOM element.
+  function renderFormatted(formatted, container) {
+    if (typeof formatted === "object" && formatted !== null && formatted.html) {
+      container.innerHTML = formatted.html;
+    } else {
+      container.textContent = formatted;
+    }
+  }
+
+  // Extracts the plain text from a formatter result (handles times10 {text, html} objects).
+  function getFormattedText(formatted) {
+    if (typeof formatted === "object" && formatted !== null && formatted.text) {
+      return formatted.text;
+    }
+    return formatted;
+  }
+
+  // --- Menu helpers ---
+
+  function createMenu(menuEl, buttonEl) {
+    return {
+      close() {
+        menuEl.classList.remove("open");
+        buttonEl.setAttribute("aria-expanded", "false");
+      },
+      toggle(forceOpen) {
+        const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : !menuEl.classList.contains("open");
+        menuEl.classList.toggle("open", shouldOpen);
+        buttonEl.setAttribute("aria-expanded", String(shouldOpen));
+        return shouldOpen;
+      },
+      isOpen() {
+        return menuEl.classList.contains("open");
+      },
+      contains(el) {
+        return menuEl.contains(el);
+      }
+    };
+  }
+
+  const modeMenuCtrl = createMenu(modeMenu, modeMenuButton);
+  const settingsMenuCtrl = createMenu(settingsMenu, settingsMenuButton);
+  const themeSubmenuCtrl = createMenu(themeSubmenu, themeMenuButton);
+
+  // --- Core functions ---
+
   function openDetachedWindow() {
     const url = chrome.runtime.getURL("popup.html?detached=1");
 
@@ -103,33 +153,16 @@
   }
 
   function formatResult(value) {
-    // Use the formatter module with current settings
     return window.CalculatorFormatter.formatResult(value, numberFormatSettings);
   }
 
   function formatResultParseable(value) {
-    // Format a number to a parseable string respecting user's notation preference
     const formatted = window.CalculatorFormatter.formatResult(value, numberFormatSettings);
-    
-    if (typeof formatted === "object" && formatted !== null && formatted.text) {
-      // times10 notation: convert "×10^" to "*10^" to make it parseable
-      return formatted.text.replace(/×/g, "*");
-    }
-    
-    // For "e" notation or plain numbers, it's already parseable
-    return formatted;
+    return getFormattedText(formatted).replace(/×/g, "*");
   }
 
   function setResultMessage(message, isError) {
-    // Handle both string messages and formatted objects (for times10 notation)
-    if (typeof message === "object" && message !== null && message.html) {
-      // times10 notation - use HTML
-      resultText.innerHTML = message.html;
-    } else {
-      // Regular string or e notation - use textContent for safety
-      resultText.textContent = message;
-    }
-    
+    renderFormatted(message, resultText);
     resultText.classList.toggle("error", Boolean(isError));
     resultText.classList.toggle("success", !isError);
     calculationPanel.classList.toggle("error", Boolean(isError));
@@ -146,8 +179,8 @@
     if (isOpen) {
       updatePreview();
     }
-    closeModeMenu();
-    closeSettingsMenu();
+    modeMenuCtrl.close();
+    settingsMenuCtrl.close();
   }
 
   function updateNumberFormatUIFromSettings() {
@@ -155,7 +188,7 @@
     sigDigitsValue.textContent = numberFormatSettings.significantDigits;
     magnitudeSlider.value = numberFormatSettings.sciNotationMagnitude;
     magnitudeValue.textContent = numberFormatSettings.sciNotationMagnitude;
-    
+
     if (numberFormatSettings.notationStyle === "times10") {
       notationStyleTimes10.checked = true;
     } else {
@@ -169,25 +202,23 @@
 
   function updatePreview() {
     const testValues = [
-      { id: previewTiny, value: 0.00000453245 },
-      { id: previewSmall, value: 0.123456789 },
-      { id: previewInteger, value: 42 },
-      { id: previewLarge, value: 123456789012 },
-      { id: previewHuge, value: 9.87654321e25 },
-      { id: previewPi, value: 3.14159265359 }
+      { el: previewTiny, value: 0.00000453245 },
+      { el: previewSmall, value: 0.123456789 },
+      { el: previewInteger, value: 42 },
+      { el: previewLarge, value: 123456789012 },
+      { el: previewHuge, value: 9.87654321e25 },
+      { el: previewPi, value: 3.14159265359 }
     ];
 
-    testValues.forEach(({ id, value }) => {
-      const formatted = window.CalculatorFormatter.formatResult(value, numberFormatSettings);
-      
-      if (typeof formatted === "object" && formatted.html) {
-        // times10 notation - use HTML
-        id.innerHTML = formatted.html;
-      } else {
-        // Regular string or e notation
-        id.textContent = formatted;
-      }
+    testValues.forEach(({ el, value }) => {
+      renderFormatted(window.CalculatorFormatter.formatResult(value, numberFormatSettings), el);
     });
+  }
+
+  function onNumberFormatChange(key, value) {
+    numberFormatSettings[key] = value;
+    updatePreview();
+    saveNumberFormatSettings();
   }
 
   function sanitizeGraphSettings(settings) {
@@ -327,48 +358,69 @@
     }, GRAPH_PREVIEW_DEBOUNCE_MS);
   }
 
-  function closeModeMenu() {
-    modeMenu.classList.remove("open");
-    modeMenuButton.setAttribute("aria-expanded", "false");
+  // --- View rendering (pure DOM, no side effects) ---
+
+  function renderAngleMode(mode) {
+    const degreesActive = mode === "deg";
+    radiansAngleButton.classList.toggle("active", !degreesActive);
+    degreesAngleButton.classList.toggle("active", degreesActive);
+    radiansAngleButton.setAttribute("aria-checked", String(!degreesActive));
+    degreesAngleButton.setAttribute("aria-checked", String(degreesActive));
   }
 
-  function closeSettingsMenu() {
-    settingsMenu.classList.remove("open");
-    settingsMenuButton.setAttribute("aria-expanded", "false");
+  function renderTheme(theme) {
+    lightThemeButton.classList.toggle("active", theme === "light");
+    darkThemeButton.classList.toggle("active", theme === "dark");
+    neutralThemeButton.classList.toggle("active", theme === "neutral");
+    lightThemeButton.setAttribute("aria-checked", String(theme === "light"));
+    darkThemeButton.setAttribute("aria-checked", String(theme === "dark"));
+    neutralThemeButton.setAttribute("aria-checked", String(theme === "neutral"));
+    document.documentElement.setAttribute("data-theme", theme);
   }
 
-  function toggleModeMenu(forceOpen) {
-    const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : !modeMenu.classList.contains("open");
-    modeMenu.classList.toggle("open", shouldOpen);
-    modeMenuButton.setAttribute("aria-expanded", String(shouldOpen));
-    if (shouldOpen) {
-      closeSettingsMenu();
-    }
-  }
-
-  function toggleSettingsMenu(forceOpen) {
-    const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : !settingsMenu.classList.contains("open");
-    settingsMenu.classList.toggle("open", shouldOpen);
-    settingsMenuButton.setAttribute("aria-expanded", String(shouldOpen));
-    if (shouldOpen) {
-      closeModeMenu();
-    }
-  }
-
-  function setActiveView(viewName, shouldPersist) {
-    activeView = viewName === "graph" ? "graph" : "calculator";
-    const graphActive = activeView === "graph";
-
+  function renderActiveView(viewName) {
+    const graphActive = viewName === "graph";
     calculatorView.classList.toggle("hidden", graphActive);
     graphView.classList.toggle("hidden", !graphActive);
     calculatorModeButton.classList.toggle("active", !graphActive);
     graphModeButton.classList.toggle("active", graphActive);
     calculatorModeButton.setAttribute("aria-checked", String(!graphActive));
     graphModeButton.setAttribute("aria-checked", String(graphActive));
-    closeModeMenu();
-    closeSettingsMenu();
+  }
 
-    if (graphActive) {
+  // --- State setters (render + persist + side effects) ---
+
+  async function setAngleMode(nextMode, shouldPersist) {
+    angleMode = nextMode === "deg" ? "deg" : "rad";
+    renderAngleMode(angleMode);
+    if (shouldPersist !== false) {
+      await window.CalculatorHistory.setAngleMode(angleMode);
+    }
+    triggerPreview();
+    if (activeView === "graph") {
+      queueGraphRedraw(false);
+    }
+  }
+
+  async function setTheme(theme, shouldPersist) {
+    const validThemes = ["light", "dark", "neutral"];
+    const safeTheme = validThemes.includes(theme) ? theme : "dark";
+    renderTheme(safeTheme);
+    if (shouldPersist !== false) {
+      await window.CalculatorHistory.setTheme(safeTheme);
+    }
+    if (activeView === "graph") {
+      await redrawGraph(false);
+    }
+  }
+
+  function setActiveView(viewName, shouldPersist) {
+    activeView = viewName === "graph" ? "graph" : "calculator";
+    renderActiveView(activeView);
+    modeMenuCtrl.close();
+    settingsMenuCtrl.close();
+
+    if (activeView === "graph") {
       if (!graphExpressionInput.value.trim() && expressionInput.value.trim()) {
         graphExpressionInput.value = expressionInput.value.trim();
       }
@@ -384,63 +436,6 @@
       window.CalculatorHistory.setActiveView(activeView).catch((error) => {
         console.error("Failed to persist active view", error);
       });
-    }
-  }
-
-  async function setAngleMode(nextMode, shouldPersist) {
-    angleMode = nextMode === "deg" ? "deg" : "rad";
-    const degreesActive = angleMode === "deg";
-    radiansAngleButton.classList.toggle("active", !degreesActive);
-    degreesAngleButton.classList.toggle("active", degreesActive);
-    radiansAngleButton.setAttribute("aria-checked", String(!degreesActive));
-    degreesAngleButton.setAttribute("aria-checked", String(degreesActive));
-    if (shouldPersist !== false) {
-      await window.CalculatorHistory.setAngleMode(angleMode);
-    }
-    triggerPreview();
-    if (activeView === "graph") {
-      queueGraphRedraw(false);
-    }
-  }
-
-  function toggleThemeSubmenu(forceOpen) {
-    const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : !themeSubmenu.classList.contains("open");
-    themeSubmenu.classList.toggle("open", shouldOpen);
-    themeMenuButton.setAttribute("aria-expanded", String(shouldOpen));
-  }
-
-  function closeThemeSubmenu() {
-    themeSubmenu.classList.remove("open");
-    themeMenuButton.setAttribute("aria-expanded", "false");
-  }
-
-  function applyTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme);
-  }
-
-  async function setTheme(theme, shouldPersist) {
-    const validThemes = ["light", "dark", "neutral"];
-    const safeTheme = validThemes.includes(theme) ? theme : "dark";
-    
-    // Update UI
-    lightThemeButton.classList.toggle("active", safeTheme === "light");
-    darkThemeButton.classList.toggle("active", safeTheme === "dark");
-    neutralThemeButton.classList.toggle("active", safeTheme === "neutral");
-    lightThemeButton.setAttribute("aria-checked", String(safeTheme === "light"));
-    darkThemeButton.setAttribute("aria-checked", String(safeTheme === "dark"));
-    neutralThemeButton.setAttribute("aria-checked", String(safeTheme === "neutral"));
-    
-    // Apply theme to DOM
-    applyTheme(safeTheme);
-    
-    // Persist if needed
-    if (shouldPersist !== false) {
-      await window.CalculatorHistory.setTheme(safeTheme);
-    }
-    
-    // Redraw graph if in graph view to update canvas colors
-    if (activeView === "graph") {
-      await redrawGraph(false);
     }
   }
 
@@ -692,16 +687,11 @@
     hasShownValidResult = true;
     lastValidResultText = formatted;
 
-    // Extract text representation for storage (handles both string and object formats)
-    const textForStorage = typeof formatted === "object" && formatted !== null && formatted.text
-      ? formatted.text
-      : formatted;
-
     return {
       expression,
       normalizedExpression: evaluation.normalized,
       resultValue: evaluation.value,
-      resultText: textForStorage,
+      resultText: getFormattedText(formatted),
       angleMode,
       ts: Date.now()
     };
@@ -767,12 +757,10 @@
     resultButton.title = "Insert result at cursor";
     resultButton.textContent = "= " + entry.resultText;
     resultButton.addEventListener("click", () => {
-      // Format the value in user's preferred notation as a parseable expression
       const parseableValue = formatResultParseable(entry.resultValue);
       insertTextAtCaret(parseableValue);
     });
     resultLine.appendChild(resultButton);
-    // Copy button should also use parseable value in user's preferred format
     resultLine.appendChild(createCopyButton(formatResultParseable(entry.resultValue)));
 
     item.appendChild(expressionLine);
@@ -832,18 +820,16 @@
     }
 
     setActiveView(savedActiveView, false);
-    
-    // Listen for system theme changes
+
     if (typeof window !== "undefined" && window.matchMedia) {
       const darkModeQuery = window.matchMedia("(prefers-color-scheme: dark)");
       const handleThemeChange = async (e) => {
-        // Only auto-switch if user hasn't manually set a preference
         const currentTheme = await window.CalculatorHistory.getTheme();
         if (!currentTheme) {
           await setTheme(e.matches ? "dark" : "light", false);
         }
       };
-      
+
       if (darkModeQuery.addEventListener) {
         darkModeQuery.addEventListener("change", handleThemeChange);
       } else if (darkModeQuery.addListener) {
@@ -852,12 +838,16 @@
     }
   }
 
+  // --- Event listeners ---
+
   modeMenuButton.addEventListener("click", () => {
-    toggleModeMenu();
+    const opening = modeMenuCtrl.toggle();
+    if (opening) settingsMenuCtrl.close();
   });
 
   settingsMenuButton.addEventListener("click", () => {
-    toggleSettingsMenu();
+    const opening = settingsMenuCtrl.toggle();
+    if (opening) modeMenuCtrl.close();
   });
 
   calculatorModeButton.addEventListener("click", () => {
@@ -870,34 +860,34 @@
 
   radiansAngleButton.addEventListener("click", async () => {
     await setAngleMode("rad");
-    closeSettingsMenu();
+    settingsMenuCtrl.close();
   });
 
   degreesAngleButton.addEventListener("click", async () => {
     await setAngleMode("deg");
-    closeSettingsMenu();
+    settingsMenuCtrl.close();
   });
 
   themeMenuButton.addEventListener("click", () => {
-    toggleThemeSubmenu();
+    themeSubmenuCtrl.toggle();
   });
 
   lightThemeButton.addEventListener("click", async () => {
     await setTheme("light");
-    closeThemeSubmenu();
-    closeSettingsMenu();
+    themeSubmenuCtrl.close();
+    settingsMenuCtrl.close();
   });
 
   darkThemeButton.addEventListener("click", async () => {
     await setTheme("dark");
-    closeThemeSubmenu();
-    closeSettingsMenu();
+    themeSubmenuCtrl.close();
+    settingsMenuCtrl.close();
   });
 
   neutralThemeButton.addEventListener("click", async () => {
     await setTheme("neutral");
-    closeThemeSubmenu();
-    closeSettingsMenu();
+    themeSubmenuCtrl.close();
+    settingsMenuCtrl.close();
   });
 
   numberFormatButton.addEventListener("click", () => {
@@ -912,74 +902,53 @@
   sigDigitsSlider.addEventListener("input", () => {
     const value = parseInt(sigDigitsSlider.value, 10);
     sigDigitsValue.textContent = value;
-    numberFormatSettings.significantDigits = value;
-    updatePreview();
-    saveNumberFormatSettings();
+    onNumberFormatChange("significantDigits", value);
   });
 
   magnitudeSlider.addEventListener("input", () => {
     const value = parseInt(magnitudeSlider.value, 10);
     magnitudeValue.textContent = value;
-    numberFormatSettings.sciNotationMagnitude = value;
-    updatePreview();
-    saveNumberFormatSettings();
+    onNumberFormatChange("sciNotationMagnitude", value);
   });
 
   notationStyleE.addEventListener("change", () => {
-    if (notationStyleE.checked) {
-      numberFormatSettings.notationStyle = "e";
-      updatePreview();
-      saveNumberFormatSettings();
-    }
+    if (notationStyleE.checked) onNumberFormatChange("notationStyle", "e");
   });
 
   notationStyleTimes10.addEventListener("change", () => {
-    if (notationStyleTimes10.checked) {
-      numberFormatSettings.notationStyle = "times10";
-      updatePreview();
-      saveNumberFormatSettings();
-    }
+    if (notationStyleTimes10.checked) onNumberFormatChange("notationStyle", "times10");
   });
 
   document.addEventListener("click", (event) => {
-    if (!modeMenu.classList.contains("open")) {
-      return;
-    }
-
-    if (modeMenu.contains(event.target) || modeMenuButton.contains(event.target)) {
-      return;
-    }
-
-    closeModeMenu();
+    if (!modeMenuCtrl.isOpen()) return;
+    if (modeMenuCtrl.contains(event.target) || modeMenuButton.contains(event.target)) return;
+    modeMenuCtrl.close();
   });
 
   document.addEventListener("click", (event) => {
-    if (!settingsMenu.classList.contains("open")) {
-      return;
-    }
+    if (!settingsMenuCtrl.isOpen()) return;
 
-    if (settingsMenu.contains(event.target) || settingsMenuButton.contains(event.target)) {
-      // Close theme submenu if clicking elsewhere in settings menu
-      if (themeSubmenu.classList.contains("open") && !themeSubmenu.contains(event.target) && !themeMenuButton.contains(event.target)) {
-        closeThemeSubmenu();
+    if (settingsMenuCtrl.contains(event.target) || settingsMenuButton.contains(event.target)) {
+      if (themeSubmenuCtrl.isOpen() && !themeSubmenuCtrl.contains(event.target) && !themeMenuButton.contains(event.target)) {
+        themeSubmenuCtrl.close();
       }
       return;
     }
 
-    closeSettingsMenu();
-    closeThemeSubmenu();
+    settingsMenuCtrl.close();
+    themeSubmenuCtrl.close();
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
-      if (themeSubmenu.classList.contains("open")) {
-        closeThemeSubmenu();
+      if (themeSubmenuCtrl.isOpen()) {
+        themeSubmenuCtrl.close();
         themeMenuButton.focus();
-      } else if (modeMenu.classList.contains("open")) {
-        closeModeMenu();
+      } else if (modeMenuCtrl.isOpen()) {
+        modeMenuCtrl.close();
         modeMenuButton.focus();
-      } else if (settingsMenu.classList.contains("open")) {
-        closeSettingsMenu();
+      } else if (settingsMenuCtrl.isOpen()) {
+        settingsMenuCtrl.close();
         settingsMenuButton.focus();
       } else if (numberFormatPanel.classList.contains("open")) {
         numberFormatPanel.classList.remove("open");
@@ -990,14 +959,8 @@
   });
 
   document.addEventListener("click", (event) => {
-    if (!numberFormatPanel.classList.contains("open")) {
-      return;
-    }
-
-    if (numberFormatPanel.contains(event.target) || numberFormatButton.contains(event.target)) {
-      return;
-    }
-
+    if (!numberFormatPanel.classList.contains("open")) return;
+    if (numberFormatPanel.contains(event.target) || numberFormatButton.contains(event.target)) return;
     numberFormatPanel.classList.remove("open");
     numberFormatPanel.setAttribute("aria-hidden", "true");
   });

@@ -41,6 +41,7 @@ function loadPopupScript() {
   };
 
   require(path.join(__dirname, "..", "history.js"));
+  require(path.join(__dirname, "..", "settings.js"));
   require(path.join(__dirname, "..", "popup.js"));
 }
 

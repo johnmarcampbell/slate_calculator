@@ -4,23 +4,12 @@
   const HISTORY_LIMIT = 80;
   const PREVIEW_DEBOUNCE_MS = 120;
   const GRAPH_PREVIEW_DEBOUNCE_MS = 140;
-  const DEFAULT_GRAPH_SETTINGS = {
-    expression: "",
-    xMin: -10,
-    xMax: 10,
-    yMin: -10,
-    yMax: 10,
-    yAuto: true
-  };
 
-  let angleMode = "rad";
+  const settings = new window.CalculatorSettings(chrome.storage.local);
+
   let historyEntries = [];
-  let activeView = "calculator";
-  let graphSettings = Object.assign({}, DEFAULT_GRAPH_SETTINGS);
-  let numberFormatSettings = { significantDigits: 12, sciNotationMagnitude: 6, notationStyle: "e" };
   let previewTimer = null;
   let graphPreviewTimer = null;
-  let draftSaveQueue = Promise.resolve();
   let lastSelectionStart = 0;
   let lastSelectionEnd = 0;
   let hasShownValidResult = false;
@@ -83,7 +72,6 @@
 
   // --- Formatting helpers ---
 
-  // Renders a formatter result (string or {html, text} object) into a DOM element.
   function renderFormatted(formatted, container) {
     if (typeof formatted === "object" && formatted !== null && formatted.html) {
       container.innerHTML = formatted.html;
@@ -92,7 +80,6 @@
     }
   }
 
-  // Extracts the plain text from a formatter result (handles times10 {text, html} objects).
   function getFormattedText(formatted) {
     if (typeof formatted === "object" && formatted !== null && formatted.text) {
       return formatted.text;
@@ -153,11 +140,11 @@
   }
 
   function formatResult(value) {
-    return window.CalculatorFormatter.formatResult(value, numberFormatSettings);
+    return window.CalculatorFormatter.formatResult(value, settings.get("numberFormat"));
   }
 
   function formatResultParseable(value) {
-    const formatted = window.CalculatorFormatter.formatResult(value, numberFormatSettings);
+    const formatted = window.CalculatorFormatter.formatResult(value, settings.get("numberFormat"));
     return getFormattedText(formatted).replace(/×/g, "*");
   }
 
@@ -184,23 +171,21 @@
   }
 
   function updateNumberFormatUIFromSettings() {
-    sigDigitsSlider.value = numberFormatSettings.significantDigits;
-    sigDigitsValue.textContent = numberFormatSettings.significantDigits;
-    magnitudeSlider.value = numberFormatSettings.sciNotationMagnitude;
-    magnitudeValue.textContent = numberFormatSettings.sciNotationMagnitude;
+    const nf = settings.get("numberFormat");
+    sigDigitsSlider.value = nf.significantDigits;
+    sigDigitsValue.textContent = nf.significantDigits;
+    magnitudeSlider.value = nf.sciNotationMagnitude;
+    magnitudeValue.textContent = nf.sciNotationMagnitude;
 
-    if (numberFormatSettings.notationStyle === "times10") {
+    if (nf.notationStyle === "times10") {
       notationStyleTimes10.checked = true;
     } else {
       notationStyleE.checked = true;
     }
   }
 
-  async function saveNumberFormatSettings() {
-    await window.CalculatorHistory.setNumberFormatSettings(numberFormatSettings);
-  }
-
   function updatePreview() {
+    const nf = settings.get("numberFormat");
     const testValues = [
       { el: previewTiny, value: 0.00000453245 },
       { el: previewSmall, value: 0.123456789 },
@@ -211,52 +196,33 @@
     ];
 
     testValues.forEach(({ el, value }) => {
-      renderFormatted(window.CalculatorFormatter.formatResult(value, numberFormatSettings), el);
+      renderFormatted(window.CalculatorFormatter.formatResult(value, nf), el);
     });
   }
 
   function onNumberFormatChange(key, value) {
-    numberFormatSettings[key] = value;
+    const current = settings.get("numberFormat");
+    const next = Object.assign({}, current, { [key]: value });
+    settings.set("numberFormat", next).catch((error) => {
+      console.error("Failed to persist number format", error);
+    });
     updatePreview();
-    saveNumberFormatSettings();
-  }
-
-  function sanitizeGraphSettings(settings) {
-    const source = settings && typeof settings === "object" ? settings : {};
-    const safe = {
-      expression: String(source.expression || ""),
-      xMin: Number.isFinite(Number(source.xMin)) ? Number(source.xMin) : DEFAULT_GRAPH_SETTINGS.xMin,
-      xMax: Number.isFinite(Number(source.xMax)) ? Number(source.xMax) : DEFAULT_GRAPH_SETTINGS.xMax,
-      yMin: Number.isFinite(Number(source.yMin)) ? Number(source.yMin) : DEFAULT_GRAPH_SETTINGS.yMin,
-      yMax: Number.isFinite(Number(source.yMax)) ? Number(source.yMax) : DEFAULT_GRAPH_SETTINGS.yMax,
-      yAuto: source.yAuto !== false
-    };
-
-    if (safe.xMax <= safe.xMin) {
-      safe.xMin = DEFAULT_GRAPH_SETTINGS.xMin;
-      safe.xMax = DEFAULT_GRAPH_SETTINGS.xMax;
-    }
-
-    if (safe.yMax <= safe.yMin) {
-      safe.yMin = DEFAULT_GRAPH_SETTINGS.yMin;
-      safe.yMax = DEFAULT_GRAPH_SETTINGS.yMax;
-    }
-
-    return safe;
   }
 
   function updateGraphInputsFromState() {
-    graphExpressionInput.value = graphSettings.expression;
-    xMinInput.value = graphSettings.xMin;
-    xMaxInput.value = graphSettings.xMax;
-    yMinInput.value = graphSettings.yMin;
-    yMaxInput.value = graphSettings.yMax;
-    yAutoCheckbox.checked = graphSettings.yAuto;
-    yMinInput.disabled = graphSettings.yAuto;
-    yMaxInput.disabled = graphSettings.yAuto;
+    const g = settings.get("graphView");
+    graphExpressionInput.value = g.expression;
+    xMinInput.value = g.xMin;
+    xMaxInput.value = g.xMax;
+    yMinInput.value = g.yMin;
+    yMaxInput.value = g.yMax;
+    yAutoCheckbox.checked = g.yAuto;
+    yMinInput.disabled = g.yAuto;
+    yMaxInput.disabled = g.yAuto;
   }
 
   function readGraphSettingsFromInputs() {
+    const current = settings.get("graphView");
     const next = {
       expression: graphExpressionInput.value.trim(),
       xMin: Number(xMinInput.value),
@@ -275,8 +241,8 @@
     }
 
     if (next.yAuto) {
-      next.yMin = graphSettings.yMin;
-      next.yMax = graphSettings.yMax;
+      next.yMin = current.yMin;
+      next.yMax = current.yMax;
     }
 
     return { ok: true, value: next };
@@ -290,10 +256,6 @@
       px: (event.clientX - rect.left) * scaleX,
       py: (event.clientY - rect.top) * scaleY
     };
-  }
-
-  async function persistGraphSettings() {
-    await window.CalculatorHistory.setGraphSettings(graphSettings);
   }
 
   function updateCoordsMessage(point) {
@@ -320,9 +282,9 @@
       return;
     }
 
-    graphSettings = parsed.value;
-    grapher.setExpression(graphSettings.expression);
-    grapher.setView(graphSettings);
+    let nextGraphView = parsed.value;
+    grapher.setExpression(nextGraphView.expression);
+    grapher.setView(nextGraphView);
 
     const drawResult = grapher.draw();
     if (!drawResult.ok) {
@@ -332,16 +294,15 @@
       return;
     }
 
-    if (graphSettings.yAuto) {
-      const nextView = grapher.getView();
-      graphSettings.yMin = nextView.yMin;
-      graphSettings.yMax = nextView.yMax;
-      yMinInput.value = graphSettings.yMin;
-      yMaxInput.value = graphSettings.yMax;
+    if (nextGraphView.yAuto) {
+      const view = grapher.getView();
+      nextGraphView = Object.assign({}, nextGraphView, { yMin: view.yMin, yMax: view.yMax });
+      yMinInput.value = nextGraphView.yMin;
+      yMaxInput.value = nextGraphView.yMax;
     }
 
     setGraphStatus(drawResult.status, false);
-    await persistGraphSettings();
+    await settings.set("graphView", nextGraphView);
   }
 
   function queueGraphRedraw(showErrors) {
@@ -390,37 +351,40 @@
 
   // --- State setters (render + persist + side effects) ---
 
-  async function setAngleMode(nextMode, shouldPersist) {
-    angleMode = nextMode === "deg" ? "deg" : "rad";
-    renderAngleMode(angleMode);
-    if (shouldPersist !== false) {
-      await window.CalculatorHistory.setAngleMode(angleMode);
-    }
+  function setAngleMode(nextMode) {
+    const safe = nextMode === "deg" ? "deg" : "rad";
+    renderAngleMode(safe);
+    settings.set("angleMode", safe).catch((error) => {
+      console.error("Failed to persist angle mode", error);
+    });
     triggerPreview();
-    if (activeView === "graph") {
+    if (settings.get("activeView") === "graph") {
       queueGraphRedraw(false);
     }
   }
 
-  async function setTheme(theme, shouldPersist) {
+  function setTheme(theme) {
     const validThemes = ["light", "dark", "neutral"];
     const safeTheme = validThemes.includes(theme) ? theme : "dark";
     renderTheme(safeTheme);
-    if (shouldPersist !== false) {
-      await window.CalculatorHistory.setTheme(safeTheme);
-    }
-    if (activeView === "graph") {
-      await redrawGraph(false);
+    settings.set("theme", safeTheme).catch((error) => {
+      console.error("Failed to persist theme", error);
+    });
+    if (settings.get("activeView") === "graph") {
+      redrawGraph(false).catch((error) => {
+        console.error(error);
+        setGraphStatus("Error: failed to draw graph", true);
+      });
     }
   }
 
-  function setActiveView(viewName, shouldPersist) {
-    activeView = viewName === "graph" ? "graph" : "calculator";
-    renderActiveView(activeView);
+  function setActiveView(viewName) {
+    const safe = viewName === "graph" ? "graph" : "calculator";
+    renderActiveView(safe);
     modeMenuCtrl.close();
     settingsMenuCtrl.close();
 
-    if (activeView === "graph") {
+    if (safe === "graph") {
       if (!graphExpressionInput.value.trim() && expressionInput.value.trim()) {
         graphExpressionInput.value = expressionInput.value.trim();
       }
@@ -432,17 +396,15 @@
       updateCaretSnapshot();
     }
 
-    if (shouldPersist !== false) {
-      window.CalculatorHistory.setActiveView(activeView).catch((error) => {
-        console.error("Failed to persist active view", error);
-      });
-    }
+    settings.set("activeView", safe).catch((error) => {
+      console.error("Failed to persist active view", error);
+    });
   }
 
   function setupGraphInteractions() {
     grapher = window.CalculatorGrapher.create(graphCanvas, {
       evaluateAtX: (expression, x) => {
-        return window.CalculatorEvaluator.evaluateWithVariables(expression, angleMode, { x });
+        return window.CalculatorEvaluator.evaluateWithVariables(expression, settings.get("angleMode"), { x });
       }
     });
 
@@ -452,13 +414,12 @@
       const scale = event.deltaY < 0 ? 0.9 : 1.1;
       grapher.zoomAtPixel(scale, px, py);
       const nextView = grapher.getView();
-      graphSettings.xMin = nextView.xMin;
-      graphSettings.xMax = nextView.xMax;
-      if (!graphSettings.yAuto) {
-        graphSettings.yMin = nextView.yMin;
-        graphSettings.yMax = nextView.yMax;
+      xMinInput.value = nextView.xMin;
+      xMaxInput.value = nextView.xMax;
+      if (!yAutoCheckbox.checked) {
+        yMinInput.value = nextView.yMin;
+        yMaxInput.value = nextView.yMax;
       }
-      updateGraphInputsFromState();
       queueGraphRedraw(false);
     });
 
@@ -487,13 +448,12 @@
 
         grapher.panByPixels(dx, dy);
         const nextView = grapher.getView();
-        graphSettings.xMin = nextView.xMin;
-        graphSettings.xMax = nextView.xMax;
-        if (!graphSettings.yAuto) {
-          graphSettings.yMin = nextView.yMin;
-          graphSettings.yMax = nextView.yMax;
+        xMinInput.value = nextView.xMin;
+        xMaxInput.value = nextView.xMax;
+        if (!yAutoCheckbox.checked) {
+          yMinInput.value = nextView.yMin;
+          yMaxInput.value = nextView.yMax;
         }
-        updateGraphInputsFromState();
         queueGraphRedraw(false);
         return;
       }
@@ -503,14 +463,14 @@
       updateCoordsMessage(nearest);
     });
 
-    graphCanvas.addEventListener("pointerup", async (event) => {
+    graphCanvas.addEventListener("pointerup", (event) => {
       if (!dragState || dragState.pointerId !== event.pointerId) {
         return;
       }
 
       graphCanvas.releasePointerCapture(event.pointerId);
       dragState = null;
-      await persistGraphSettings();
+      // redrawGraph (already queued by pointermove) persists the new view.
     });
 
     graphCanvas.addEventListener("pointercancel", () => {
@@ -549,10 +509,14 @@
     });
 
     graphResetButton.addEventListener("click", () => {
-      graphSettings = Object.assign({}, DEFAULT_GRAPH_SETTINGS, {
-        expression: graphExpressionInput.value.trim()
-      });
-      updateGraphInputsFromState();
+      const defaults = { expression: graphExpressionInput.value.trim(), xMin: -10, xMax: 10, yMin: -10, yMax: 10, yAuto: true };
+      xMinInput.value = defaults.xMin;
+      xMaxInput.value = defaults.xMax;
+      yMinInput.value = defaults.yMin;
+      yMaxInput.value = defaults.yMax;
+      yAutoCheckbox.checked = defaults.yAuto;
+      yMinInput.disabled = defaults.yAuto;
+      yMaxInput.disabled = defaults.yAuto;
       queueGraphRedraw(true);
     });
   }
@@ -587,18 +551,10 @@
     expressionInput.focus();
     expressionInput.setSelectionRange(nextCaret, nextCaret);
     updateCaretSnapshot();
-    queueExpressionDraftSave(nextValue).catch((error) => {
+    settings.set("expressionDraft", nextValue).catch((error) => {
       console.error("Failed to save expression draft", error);
     });
     triggerPreview();
-  }
-
-  function queueExpressionDraftSave(nextDraft) {
-    const safeDraft = String(nextDraft || "");
-    draftSaveQueue = draftSaveQueue
-      .catch(() => undefined)
-      .then(() => window.CalculatorHistory.setExpressionDraft(safeDraft));
-    return draftSaveQueue;
   }
 
   async function copyToClipboard(value) {
@@ -667,6 +623,7 @@
 
   function evaluateCurrentExpression(showErrors) {
     const expression = expressionInput.value;
+    const angleMode = settings.get("angleMode");
     const evaluation = window.CalculatorEvaluator.evaluate(expression, angleMode);
 
     if (!evaluation.ok) {
@@ -719,7 +676,7 @@
 
     historyEntries = await window.CalculatorHistory.addHistoryEntry(entry, HISTORY_LIMIT);
     renderHistory();
-    await queueExpressionDraftSave("");
+    await settings.set("expressionDraft", "");
 
     expressionInput.value = "";
     hasShownValidResult = false;
@@ -790,52 +747,26 @@
       document.body.classList.add("detached");
     }
 
-    const [savedAngleMode, savedHistory, savedGraphSettings, savedDraft, savedNumberFormat, savedTheme, savedActiveView] = await Promise.all([
-      window.CalculatorHistory.getAngleMode(),
-      window.CalculatorHistory.getHistory(),
-      window.CalculatorHistory.getGraphSettings(),
-      window.CalculatorHistory.getExpressionDraft(),
-      window.CalculatorHistory.getNumberFormatSettings(),
-      window.CalculatorHistory.getTheme(),
-      window.CalculatorHistory.getActiveView()
-    ]);
+    await settings.ready();
 
-    await setTheme(savedTheme, false);
-    await setAngleMode(savedAngleMode, false);
-
-    historyEntries = savedHistory;
+    historyEntries = await window.CalculatorHistory.getHistory();
     renderHistory();
 
-    numberFormatSettings = savedNumberFormat;
+    renderTheme(settings.get("theme"));
+    renderAngleMode(settings.get("angleMode"));
     updateNumberFormatUIFromSettings();
 
-    graphSettings = sanitizeGraphSettings(savedGraphSettings || DEFAULT_GRAPH_SETTINGS);
     updateGraphInputsFromState();
     setupGraphInteractions();
     await redrawGraph(false);
 
+    const savedDraft = settings.get("expressionDraft");
     expressionInput.value = savedDraft;
     if (savedDraft.trim()) {
       evaluateCurrentExpression(false);
     }
 
-    setActiveView(savedActiveView, false);
-
-    if (typeof window !== "undefined" && window.matchMedia) {
-      const darkModeQuery = window.matchMedia("(prefers-color-scheme: dark)");
-      const handleThemeChange = async (e) => {
-        const currentTheme = await window.CalculatorHistory.getTheme();
-        if (!currentTheme) {
-          await setTheme(e.matches ? "dark" : "light", false);
-        }
-      };
-
-      if (darkModeQuery.addEventListener) {
-        darkModeQuery.addEventListener("change", handleThemeChange);
-      } else if (darkModeQuery.addListener) {
-        darkModeQuery.addListener(handleThemeChange);
-      }
-    }
+    setActiveView(settings.get("activeView"));
   }
 
   // --- Event listeners ---
@@ -858,13 +789,13 @@
     setActiveView("graph");
   });
 
-  radiansAngleButton.addEventListener("click", async () => {
-    await setAngleMode("rad");
+  radiansAngleButton.addEventListener("click", () => {
+    setAngleMode("rad");
     settingsMenuCtrl.close();
   });
 
-  degreesAngleButton.addEventListener("click", async () => {
-    await setAngleMode("deg");
+  degreesAngleButton.addEventListener("click", () => {
+    setAngleMode("deg");
     settingsMenuCtrl.close();
   });
 
@@ -872,20 +803,20 @@
     themeSubmenuCtrl.toggle();
   });
 
-  lightThemeButton.addEventListener("click", async () => {
-    await setTheme("light");
+  lightThemeButton.addEventListener("click", () => {
+    setTheme("light");
     themeSubmenuCtrl.close();
     settingsMenuCtrl.close();
   });
 
-  darkThemeButton.addEventListener("click", async () => {
-    await setTheme("dark");
+  darkThemeButton.addEventListener("click", () => {
+    setTheme("dark");
     themeSubmenuCtrl.close();
     settingsMenuCtrl.close();
   });
 
-  neutralThemeButton.addEventListener("click", async () => {
-    await setTheme("neutral");
+  neutralThemeButton.addEventListener("click", () => {
+    setTheme("neutral");
     themeSubmenuCtrl.close();
     settingsMenuCtrl.close();
   });
@@ -985,7 +916,7 @@
 
   expressionInput.addEventListener("input", () => {
     updateCaretSnapshot();
-    queueExpressionDraftSave(expressionInput.value).catch((error) => {
+    settings.set("expressionDraft", expressionInput.value).catch((error) => {
       console.error("Failed to save expression draft", error);
     });
     triggerPreview();

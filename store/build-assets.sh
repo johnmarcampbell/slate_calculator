@@ -47,4 +47,17 @@ done
   "file://$STORE/tile.html" 2>/dev/null
 sips -z 280 440 "$OUT/promo-tile-small.png" --out "$OUT/promo-tile-small.png" >/dev/null
 
+# --- Marquee promo tile (1400x560), rendered at 2x, downscaled, and
+#     saved as JPEG (the store requires no alpha channel for promo tiles) ---
+"$CHROME" --headless --disable-gpu --hide-scrollbars \
+  --force-device-scale-factor=2 \
+  --window-size=1400,560 --screenshot="$OUT/promo-marquee.png" \
+  "file://$STORE/marquee.html" 2>/dev/null
+sips -z 560 1400 "$OUT/promo-marquee.png" --out "$OUT/promo-marquee.png" >/dev/null
+sips -s format jpeg -s formatOptions 92 "$OUT/promo-marquee.png" --out "$OUT/promo-marquee.jpg" >/dev/null
+rm -f "$OUT/promo-marquee.png"
+
+# --- Store icon (the listing's icon field wants exactly 128x128) ---
+cp "$ROOT/icons/icon128.png" "$OUT/store-icon-128.png"
+
 echo "Icons written to icons/, store images to store/assets/"

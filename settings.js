@@ -3,7 +3,7 @@
 
   const SCHEMA = {
     angleMode: {
-      storageKey: "typedCalcAngleMode",
+      storageKey: "slateCalcAngleMode",
       default: "rad",
       validate(value) {
         if (value !== "rad" && value !== "deg") {
@@ -13,7 +13,7 @@
       }
     },
     theme: {
-      storageKey: "typedCalcTheme",
+      storageKey: "slateCalcTheme",
       // Function default: detect system preference on hydrate.
       default() {
         if (typeof window !== "undefined" && window.matchMedia) {
@@ -30,7 +30,7 @@
       }
     },
     activeView: {
-      storageKey: "typedCalcActiveView",
+      storageKey: "slateCalcActiveView",
       default: "calculator",
       validate(value) {
         if (value !== "calculator" && value !== "graph") {
@@ -40,7 +40,7 @@
       }
     },
     expressionDraft: {
-      storageKey: "typedCalcExpressionDraft",
+      storageKey: "slateCalcExpressionDraft",
       default: "",
       validate(value) {
         if (typeof value !== "string") {
@@ -50,7 +50,7 @@
       }
     },
     numberFormat: {
-      storageKey: "typedCalcNumberFormat",
+      storageKey: "slateCalcNumberFormat",
       default: { significantDigits: 12, sciNotationMagnitude: 6, notationStyle: "e" },
       validate(value) {
         if (!value || typeof value !== "object") {
@@ -69,7 +69,7 @@
       }
     },
     graphView: {
-      storageKey: "typedCalcGraphSettings",
+      storageKey: "slateCalcGraphSettings",
       default: { expression: "", xMin: -10, xMax: 10, yMin: -10, yMax: 10, yAuto: true },
       validate(value) {
         if (!value || typeof value !== "object") {

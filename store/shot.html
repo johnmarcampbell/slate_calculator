@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; height: 800px; overflow: hidden; }
+  body {
+    display: flex;
+    align-items: center;
+    background:
+      radial-gradient(1000px 700px at 85% 20%, rgba(102, 217, 239, 0.14), transparent 60%),
+      radial-gradient(900px 700px at 15% 90%, rgba(249, 38, 114, 0.12), transparent 60%),
+      linear-gradient(135deg, #272822 0%, #1e1f1c 100%);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  .copy {
+    flex: 1;
+    padding: 0 48px 0 72px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #cfcfc2;
+    font-size: 20px;
+    letter-spacing: 0.04em;
+    margin-bottom: 28px;
+  }
+  .badge img { width: 44px; height: 44px; }
+  h1 {
+    color: #f8f8f2;
+    font-size: 58px;
+    line-height: 1.12;
+    font-weight: 750;
+    letter-spacing: -0.015em;
+    margin-bottom: 22px;
+  }
+  h1 .hl { color: #66d9ef; }
+  p.sub {
+    color: #cfcfc2;
+    font-size: 25px;
+    line-height: 1.45;
+    max-width: 460px;
+  }
+  .kbd-line {
+    margin-top: 34px;
+    color: #75715e;
+    font-size: 19px;
+  }
+  kbd {
+    font-family: Menlo, Consolas, monospace;
+    font-size: 16px;
+    color: #f8f8f2;
+    background: rgba(117, 113, 94, 0.25);
+    border: 1px solid rgba(117, 113, 94, 0.6);
+    border-radius: 6px;
+    padding: 3px 9px;
+  }
+  .stage {
+    width: 560px;
+    height: 800px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-right: 56px;
+  }
+  .frame {
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow:
+      0 40px 90px rgba(0, 0, 0, 0.55),
+      0 0 0 1px rgba(248, 248, 242, 0.10);
+    transform: var(--frame-scale, scale(1.18));
+    transform-origin: center center;
+  }
+  iframe {
+    display: block;
+    width: 380px;
+    height: var(--frame-height, 580px);
+    border: 0;
+  }
+</style>
+</head>
+<body>
+  <div class="copy">
+    <div class="badge"><img src="icon_badge.png" alt=""> Slate Calculator</div>
+    <h1 id="headline"></h1>
+    <p class="sub" id="subline"></p>
+    <p class="kbd-line" id="kbdline"></p>
+  </div>
+  <div class="stage">
+    <div class="frame">
+      <iframe id="popup" src=""></iframe>
+    </div>
+  </div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const scene = params.get("scene") || "calc";
+  const copy = {
+    calc: {
+      h: 'A calculator with <span class="hl">history</span>',
+      s: "Type an expression and see the result as you type. Press Enter to save it to history.",
+      k: "Trig, logs, roots, and the constants pi and e"
+    },
+    graph: {
+      h: 'Graphing <span class="hl">mode</span>',
+      s: "Plot f(x) with zoom, pan, hover coordinates, and auto-scaled axes.",
+      k: "Scroll to zoom &nbsp;·&nbsp; drag to pan"
+    },
+    light: {
+      h: 'Reuse past <span class="hl">results</span>',
+      s: "Click a history entry to insert the expression or its result at the cursor. Light, dark, and neutral themes.",
+      k: "History and settings are stored locally"
+    }
+  };
+  const c = copy[scene] || copy.calc;
+  document.getElementById("headline").innerHTML = c.h;
+  document.getElementById("subline").innerHTML = c.s;
+  document.getElementById("kbdline").innerHTML = c.k;
+  if (scene === "graph") {
+    document.documentElement.style.setProperty("--frame-height", "660px");
+    document.documentElement.style.setProperty("--frame-scale", "scale(1.08)");
+  }
+  document.getElementById("popup").src = "popup_shot.html?scene=" + scene;
+</script>
+</body>
+</html>

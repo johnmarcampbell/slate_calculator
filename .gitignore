@@ -3,3 +3,6 @@ node_modules/
 .DS_Store
 coverage/
 .nyc_output/
+dist/
+store/popup_shot.html
+store/icon_badge.png

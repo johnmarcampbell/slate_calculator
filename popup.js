@@ -133,7 +133,7 @@
       return;
     }
 
-    window.open(url, "typed-calculator-popout", "popup,width=460,height=700");
+    window.open(url, "slate-calculator-popout", "popup,width=460,height=700");
     if (!isDetachedWindow) {
       window.close();
     }
@@ -209,13 +209,22 @@
     updatePreview();
   }
 
+  // Auto-scaled bounds carry full float precision; show a short rounded
+  // form in the inputs (the exact values stay in settings and the grapher).
+  function formatAxisBound(value) {
+    if (!Number.isFinite(value)) {
+      return value;
+    }
+    return Number(value.toPrecision(3));
+  }
+
   function updateGraphInputsFromState() {
     const g = settings.get("graphView");
     graphExpressionInput.value = g.expression;
     xMinInput.value = g.xMin;
     xMaxInput.value = g.xMax;
-    yMinInput.value = g.yMin;
-    yMaxInput.value = g.yMax;
+    yMinInput.value = g.yAuto ? formatAxisBound(g.yMin) : g.yMin;
+    yMaxInput.value = g.yAuto ? formatAxisBound(g.yMax) : g.yMax;
     yAutoCheckbox.checked = g.yAuto;
     yMinInput.disabled = g.yAuto;
     yMaxInput.disabled = g.yAuto;
@@ -297,8 +306,8 @@
     if (nextGraphView.yAuto) {
       const view = grapher.getView();
       nextGraphView = Object.assign({}, nextGraphView, { yMin: view.yMin, yMax: view.yMax });
-      yMinInput.value = nextGraphView.yMin;
-      yMaxInput.value = nextGraphView.yMax;
+      yMinInput.value = formatAxisBound(nextGraphView.yMin);
+      yMaxInput.value = formatAxisBound(nextGraphView.yMax);
     }
 
     setGraphStatus(drawResult.status, false);
@@ -906,6 +915,14 @@
       openDetachedWindow();
     });
   }
+
+  // The canvas backing store is sized from its CSS box, so a window resize
+  // (mainly in the detached window) stretches the last frame until redrawn.
+  window.addEventListener("resize", () => {
+    if (!graphView.classList.contains("hidden")) {
+      queueGraphRedraw(false);
+    }
+  });
 
   expressionInput.addEventListener("keydown", async (event) => {
     if (event.key === "Enter" && !event.shiftKey) {

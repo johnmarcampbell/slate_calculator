@@ -66,7 +66,7 @@ function waitForInit() {
 describe("popup mode persistence", () => {
   test("restores graph mode from saved active view", async () => {
     attachChromeStorage({
-      typedCalcActiveView: "graph"
+      slateCalcActiveView: "graph"
     });
 
     loadPopupScript();
@@ -86,7 +86,7 @@ describe("popup mode persistence", () => {
 
   test("persist active view when switching to graph mode", async () => {
     const local = attachChromeStorage({
-      typedCalcActiveView: "calculator"
+      slateCalcActiveView: "calculator"
     });
 
     loadPopupScript();
@@ -94,13 +94,13 @@ describe("popup mode persistence", () => {
 
     document.getElementById("graphModeButton").click();
 
-    expect(local.__store.typedCalcActiveView).toBe("graph");
+    expect(local.__store.slateCalcActiveView).toBe("graph");
   });
 });
 
 describe("theme switching", () => {
   test("clicking light theme updates data-theme and persists", async () => {
-    const local = attachChromeStorage({ typedCalcTheme: "dark" });
+    const local = attachChromeStorage({ slateCalcTheme: "dark" });
     loadPopupScript();
     await waitForInit();
 
@@ -109,13 +109,13 @@ describe("theme switching", () => {
       document.getElementById("lightThemeButton").getAttribute("aria-checked") === "true"
     );
 
-    expect(local.__store.typedCalcTheme).toBe("light");
+    expect(local.__store.slateCalcTheme).toBe("light");
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
     expect(document.getElementById("darkThemeButton").getAttribute("aria-checked")).toBe("false");
   });
 
   test("clicking neutral theme updates data-theme and persists", async () => {
-    const local = attachChromeStorage({ typedCalcTheme: "dark" });
+    const local = attachChromeStorage({ slateCalcTheme: "dark" });
     loadPopupScript();
     await waitForInit();
 
@@ -124,7 +124,7 @@ describe("theme switching", () => {
       document.getElementById("neutralThemeButton").getAttribute("aria-checked") === "true"
     );
 
-    expect(local.__store.typedCalcTheme).toBe("neutral");
+    expect(local.__store.slateCalcTheme).toBe("neutral");
     expect(document.documentElement.getAttribute("data-theme")).toBe("neutral");
     expect(document.getElementById("darkThemeButton").getAttribute("aria-checked")).toBe("false");
   });
@@ -132,26 +132,26 @@ describe("theme switching", () => {
 
 describe("angle mode switching", () => {
   test("clicking degrees updates buttons and persists", async () => {
-    const local = attachChromeStorage({ typedCalcAngleMode: "rad" });
+    const local = attachChromeStorage({ slateCalcAngleMode: "rad" });
     loadPopupScript();
     await waitForInit();
 
     document.getElementById("degreesAngleButton").click();
     await waitFor(() => document.getElementById("degreesAngleButton").getAttribute("aria-checked") === "true");
 
-    expect(local.__store.typedCalcAngleMode).toBe("deg");
+    expect(local.__store.slateCalcAngleMode).toBe("deg");
     expect(document.getElementById("radiansAngleButton").getAttribute("aria-checked")).toBe("false");
   });
 
   test("clicking radians from degrees updates buttons and persists", async () => {
-    const local = attachChromeStorage({ typedCalcAngleMode: "deg" });
+    const local = attachChromeStorage({ slateCalcAngleMode: "deg" });
     loadPopupScript();
     await waitFor(() => document.getElementById("degreesAngleButton").getAttribute("aria-checked") === "true");
 
     document.getElementById("radiansAngleButton").click();
     await waitFor(() => document.getElementById("radiansAngleButton").getAttribute("aria-checked") === "true");
 
-    expect(local.__store.typedCalcAngleMode).toBe("rad");
+    expect(local.__store.slateCalcAngleMode).toBe("rad");
   });
 });
 
@@ -217,11 +217,11 @@ describe("number format settings", () => {
     slider.dispatchEvent(new Event("input", { bubbles: true }));
 
     await waitFor(() => {
-      const stored = local.__store.typedCalcNumberFormat;
+      const stored = local.__store.slateCalcNumberFormat;
       return stored && stored.significantDigits === 8;
     });
 
-    expect(local.__store.typedCalcNumberFormat.significantDigits).toBe(8);
+    expect(local.__store.slateCalcNumberFormat.significantDigits).toBe(8);
     expect(document.getElementById("sigDigitsValue").textContent).toBe("8");
   });
 
@@ -235,11 +235,11 @@ describe("number format settings", () => {
     slider.dispatchEvent(new Event("input", { bubbles: true }));
 
     await waitFor(() => {
-      const stored = local.__store.typedCalcNumberFormat;
+      const stored = local.__store.slateCalcNumberFormat;
       return stored && stored.sciNotationMagnitude === 10;
     });
 
-    expect(local.__store.typedCalcNumberFormat.sciNotationMagnitude).toBe(10);
+    expect(local.__store.slateCalcNumberFormat.sciNotationMagnitude).toBe(10);
     expect(document.getElementById("magnitudeValue").textContent).toBe("10");
   });
 });
@@ -269,7 +269,7 @@ describe("history", () => {
 
   test("clearing history removes all entries", async () => {
     attachChromeStorage({
-      typedCalcHistory: [
+      slateCalcHistory: [
         { expression: "1+1", resultText: "2", resultValue: 2, angleMode: "rad", ts: 1 }
       ]
     });
@@ -281,5 +281,56 @@ describe("history", () => {
 
     expect(document.querySelector(".history-expression")).toBeNull();
     expect(document.querySelector(".empty-history").textContent).toBe("No calculations yet.");
+  });
+});
+
+describe("graph range inputs", () => {
+  test("auto-scaled y bounds are displayed rounded", async () => {
+    attachChromeStorage({
+      slateCalcActiveView: "graph",
+      slateCalcGraphSettings: {
+        expression: "sin(x)",
+        xMin: -10,
+        xMax: 10,
+        yMin: -10,
+        yMax: 10,
+        yAuto: true
+      }
+    });
+    loadPopupScript();
+    await waitForInit();
+
+    const graphApi = window.CalculatorGrapher.create.mock.results[0].value;
+    graphApi.getView.mockReturnValue({
+      xMin: -10,
+      xMax: 10,
+      yMin: -1.1244717846081622,
+      yMax: 1.1244717846081622,
+      yAuto: true
+    });
+
+    document.getElementById("graphRedrawButton").click();
+
+    const yMinInput = document.getElementById("yMinInput");
+    const yMaxInput = document.getElementById("yMaxInput");
+    await waitFor(() => yMinInput.value === "-1.12", 200);
+    expect(yMaxInput.value).toBe("1.12");
+  });
+
+  test("window resize redraws the graph while graph view is active", async () => {
+    attachChromeStorage({
+      slateCalcActiveView: "graph"
+    });
+    loadPopupScript();
+    await waitFor(() => !document.getElementById("graphView").classList.contains("hidden"));
+
+    const graphApi = window.CalculatorGrapher.create.mock.results[0].value;
+    // let any queued redraws from init flush before counting
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const drawsBefore = graphApi.draw.mock.calls.length;
+
+    window.dispatchEvent(new Event("resize"));
+
+    await waitFor(() => graphApi.draw.mock.calls.length > drawsBefore, 300);
   });
 });

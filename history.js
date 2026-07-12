@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const HISTORY_KEY = "typedCalcHistory";
+  const HISTORY_KEY = "slateCalcHistory";
   const DEFAULT_LIMIT = 80;
 
   function getStorage() {

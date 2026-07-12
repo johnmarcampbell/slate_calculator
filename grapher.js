@@ -16,7 +16,7 @@
     if (absValue !== 0 && (absValue >= 1e5 || absValue < 1e-4)) {
       return value.toExponential(2);
     }
-    return Number(value.toPrecision(6)).toString();
+    return Number(value.toPrecision(3)).toString();
   }
 
   function chooseTickStep(range) {
@@ -107,7 +107,16 @@
       const bottomPad = 6 * scale;
       const topBaseline = 12 * scale;
       const lowerBaseline = 18 * scale;
-      const rightLabelOffset = 58 * scale;
+
+      function measureLabelWidth(text) {
+        if (typeof ctx.measureText === "function") {
+          const metrics = ctx.measureText(text);
+          if (metrics && Number.isFinite(metrics.width)) {
+            return metrics.width;
+          }
+        }
+        return text.length * labelFontSize * 0.6;
+      }
 
       ctx.save();
       ctx.lineWidth = 1;
@@ -153,10 +162,20 @@
         ctx.stroke();
       }
 
-      ctx.fillText(roundLabel(state.xMin), pad, height - bottomPad);
-      ctx.fillText(roundLabel(state.xMax), width - rightLabelOffset, height - bottomPad);
-      ctx.fillText(roundLabel(state.yMax), pad, topBaseline);
-      ctx.fillText(roundLabel(state.yMin), pad, height - lowerBaseline);
+      const xMinText = roundLabel(state.xMin);
+      const xMaxText = roundLabel(state.xMax);
+      const yMinText = roundLabel(state.yMin);
+      const yMaxText = roundLabel(state.yMax);
+
+      // Range labels hug their axis, clamped to the canvas when the axis is off-screen
+      const xLabelBaseline = clamp(xAxisPy + 14 * scale, topBaseline, height - bottomPad);
+      ctx.fillText(xMinText, pad, xLabelBaseline);
+      ctx.fillText(xMaxText, width - measureLabelWidth(xMaxText) - pad, xLabelBaseline);
+
+      const maxYLabelWidth = Math.max(measureLabelWidth(yMinText), measureLabelWidth(yMaxText));
+      const yLabelX = clamp(yAxisPx + pad, pad, width - maxYLabelWidth - pad);
+      ctx.fillText(yMaxText, yLabelX, topBaseline);
+      ctx.fillText(yMinText, yLabelX, height - lowerBaseline);
       ctx.restore();
     }
 

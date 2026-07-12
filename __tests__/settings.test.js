@@ -74,10 +74,10 @@ describe("CalculatorSettings", () => {
 
     test("hydrates valid stored values", async () => {
       const { settings } = createSettings({
-        typedCalcAngleMode: "deg",
-        typedCalcActiveView: "graph",
-        typedCalcTheme: "neutral",
-        typedCalcExpressionDraft: "2+2"
+        slateCalcAngleMode: "deg",
+        slateCalcActiveView: "graph",
+        slateCalcTheme: "neutral",
+        slateCalcExpressionDraft: "2+2"
       });
       await settings.ready();
 
@@ -90,8 +90,8 @@ describe("CalculatorSettings", () => {
     test("hydrate falls back to default on invalid stored value and does not write back", async () => {
       const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
       const local = attachChromeStorage({
-        typedCalcAngleMode: "totally-invalid",
-        typedCalcTheme: 42
+        slateCalcAngleMode: "totally-invalid",
+        slateCalcTheme: 42
       });
       const Cls = loadSettingsModule();
       const settings = new Cls(chrome.storage.local);
@@ -99,7 +99,7 @@ describe("CalculatorSettings", () => {
 
       expect(settings.get("angleMode")).toBe("rad");
       // Invalid stored value is preserved in storage (no write-back during hydrate).
-      expect(local.__store.typedCalcAngleMode).toBe("totally-invalid");
+      expect(local.__store.slateCalcAngleMode).toBe("totally-invalid");
       expect(warnSpy).toHaveBeenCalled();
       warnSpy.mockRestore();
     });
@@ -130,7 +130,7 @@ describe("CalculatorSettings", () => {
       expect(settings.get("angleMode")).toBe("deg");
 
       await writePromise;
-      expect(chrome.storage.local.__store.typedCalcAngleMode).toBe("deg");
+      expect(chrome.storage.local.__store.slateCalcAngleMode).toBe("deg");
     });
 
     test("throws synchronously when value fails validate", async () => {
@@ -220,7 +220,7 @@ describe("CalculatorSettings", () => {
 
       expect(bad).toHaveBeenCalled();
       expect(good).toHaveBeenCalledWith("deg");
-      expect(chrome.storage.local.__store.typedCalcAngleMode).toBe("deg");
+      expect(chrome.storage.local.__store.slateCalcAngleMode).toBe("deg");
       expect(errorSpy).toHaveBeenCalled();
       errorSpy.mockRestore();
     });

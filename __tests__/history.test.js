@@ -19,7 +19,7 @@ describe("CalculatorHistory", () => {
 
   test("addHistoryEntry prepends newest entries", async () => {
     attachChromeStorage({
-      typedCalcHistory: [{ expression: "1+1", resultText: "2" }]
+      slateCalcHistory: [{ expression: "1+1", resultText: "2" }]
     });
     const history = loadHistory();
 
@@ -33,7 +33,7 @@ describe("CalculatorHistory", () => {
 
   test("addHistoryEntry enforces provided limit", async () => {
     attachChromeStorage({
-      typedCalcHistory: [
+      slateCalcHistory: [
         { expression: "1", resultText: "1" },
         { expression: "2", resultText: "2" },
         { expression: "3", resultText: "3" }
@@ -49,16 +49,16 @@ describe("CalculatorHistory", () => {
 
   test("clearHistory empties persisted history", async () => {
     const local = attachChromeStorage({
-      typedCalcHistory: [{ expression: "1+1", resultText: "2" }]
+      slateCalcHistory: [{ expression: "1+1", resultText: "2" }]
     });
     const history = loadHistory();
 
     await expect(history.clearHistory()).resolves.toEqual([]);
-    expect(local.__store.typedCalcHistory).toEqual([]);
+    expect(local.__store.slateCalcHistory).toEqual([]);
   });
 
   test("history falls back to empty array for non-array payload", async () => {
-    attachChromeStorage({ typedCalcHistory: "bad" });
+    attachChromeStorage({ slateCalcHistory: "bad" });
     const history = loadHistory();
 
     await expect(history.getHistory()).resolves.toEqual([]);

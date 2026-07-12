@@ -49,11 +49,12 @@ No accounts, no analytics, no network requests. History and settings are stored 
 
 | Asset | File |
 |---|---|
+| Store icon (128×128) | `store-icon-128.png` |
 | Screenshot 1 (1280×800) | `screenshot-calc.png` |
 | Screenshot 2 (1280×800) | `screenshot-graph.png` |
 | Screenshot 3 (1280×800) | `screenshot-light.png` |
 | Small promo tile (440×280) | `promo-tile-small.png` |
-| Store icon (128×128) | `../../icons/icon128.png` (auto-taken from the zip) |
+| Marquee promo tile (1400×560, JPEG) | `promo-marquee.jpg` |
 
 ## Privacy tab
 

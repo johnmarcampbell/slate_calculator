@@ -9,6 +9,7 @@ function createMockContext2d() {
     fill: jest.fn(),
     arc: jest.fn(),
     fillText: jest.fn(),
+    measureText: jest.fn((text) => ({ width: String(text).length * 7 })),
     clearRect: jest.fn(),
     set lineWidth(value) {
       this._lineWidth = value;

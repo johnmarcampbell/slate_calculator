@@ -315,6 +315,16 @@ body.detached {
   padding: 5px 6px;
   font-family: "Courier New", Courier, monospace;
   font-size: 0.82rem;
+  background: #ffffff;
+  color: #1f1f1f;
+}
+
+/* Keep auto-scaled y fields on the same background as the x fields instead
+   of the browser's gray disabled style, which is illegible on dark themes. */
+.range-grid input:disabled {
+  background: #ffffff;
+  color: #1f1f1f;
+  opacity: 0.75;
 }
 
 .checkbox-line {

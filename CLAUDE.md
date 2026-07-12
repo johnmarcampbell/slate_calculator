@@ -5,11 +5,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm install          # install dependencies
-npm test             # run all Jest tests
-npm run test:watch   # watch mode
-npm run test:coverage  # generate coverage report
+npm install                                  # install dependencies
+npm test                                     # run all Jest tests
+npm run test:watch                           # watch mode
+npm run test:coverage                        # generate coverage report
+npx jest __tests__/evaluator.test.js         # run a single test file
+npx jest -t "evaluates sin in degrees"       # run tests matching a name
 ```
+
+`make test`, `make test-watch`, and `make test-coverage` wrap the same npm scripts.
 
 No build step — the extension loads directly from source files via Chrome's manifest V3.
 
@@ -30,6 +34,10 @@ This is a Manifest V3 Chrome extension calculator (popup only, no background ser
 | `popup.js` | (orchestrator) | Wires everything together; manages UI state, settings persistence, view switching |
 
 **Data flow:** User types expression → `popup.js` calls `CalculatorEvaluator` → result formatted by `CalculatorFormatter` → entry saved via `CalculatorHistory` → UI updated. Graph mode samples f(x) at many x values via `CalculatorGrapher`.
+
+**CSP constraint:** Popup scripts run under Chrome's extension CSP — no `eval`, no inline scripts. `evaluator.js` uses the vendored jsep parser plus a hand-written walker for exactly this reason; don't reach for `Function`/`eval` shortcuts.
+
+**Expression syntax quirks:** Multiplication is explicit (`2*pi`, not `2pi`). `Enter` evaluates; `Shift+Enter` inserts a newline in the input. `log10(x)` and `log_10(x)` are both accepted.
 
 **Theming:** CSS custom properties with three schemes (light, dark, neutral); active theme class applied to `<body>`.
 

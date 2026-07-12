@@ -6,5 +6,6 @@ beforeEach(() => {
   attachChromeStorage();
   delete window.CalculatorEvaluator;
   delete window.CalculatorHistory;
+  delete window.CalculatorSettings;
   delete window.CalculatorGrapher;
 });

@@ -158,6 +158,35 @@ describe("CalculatorGrapher", () => {
     expect(point.y).toBeCloseTo(0, 6);
   });
 
+  test("axis range labels hug the axes when they are in view", () => {
+    const { graph, canvas } = createGraph((expr, x) => ({ ok: true, value: x }), 400, 200);
+    const context = canvas.getContext("2d");
+    graph.setView({ xMin: -10, xMax: 10, yMin: -10, yMax: 10, yAuto: false });
+    graph.draw();
+
+    const labelCalls = context.fillText.mock.calls;
+    // x-axis (y=0) is at pixel row 100; x range labels sit just below it
+    expect(labelCalls).toContainEqual(["-10", 4, 114]);
+    expect(labelCalls).toContainEqual(["10", 382, 114]);
+    // y-axis (x=0) is at pixel column 200; y range labels sit just right of it
+    expect(labelCalls).toContainEqual(["10", 204, 12]);
+    expect(labelCalls).toContainEqual(["-10", 204, 182]);
+  });
+
+  test("axis range labels clamp to canvas edges when the axes are off-screen", () => {
+    const { graph, canvas } = createGraph((expr, x) => ({ ok: true, value: x }), 400, 200);
+    const context = canvas.getContext("2d");
+    graph.setView({ xMin: 5, xMax: 15, yMin: 5, yMax: 15, yAuto: false });
+    graph.draw();
+
+    const labelCalls = context.fillText.mock.calls;
+    // both axes are below/left of the view, so labels fall back to the edges
+    expect(labelCalls).toContainEqual(["5", 4, 194]);
+    expect(labelCalls).toContainEqual(["15", 382, 194]);
+    expect(labelCalls).toContainEqual(["15", 4, 12]);
+    expect(labelCalls).toContainEqual(["5", 4, 182]);
+  });
+
   test("setHoverPixel returns nearest sampled point and clearHover is safe", () => {
     const { graph } = createGraph((expr, x) => ({ ok: true, value: x }), 300, 150);
     graph.setExpression("x");

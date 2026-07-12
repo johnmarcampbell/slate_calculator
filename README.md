@@ -1,4 +1,4 @@
-# Typed Calculator Chrome Extension
+# Slate Calculator Chrome Extension
 
 A Manifest V3 Chrome extension calculator focused on typed expressions rather than a keypad.
 

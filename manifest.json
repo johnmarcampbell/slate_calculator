@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Slate Calculator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A small calculator with reusable history. Evaluate expressions, graph functions, and insert past results with a click.",
   "permissions": ["storage"],
   "icons": {

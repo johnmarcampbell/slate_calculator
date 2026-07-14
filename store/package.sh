@@ -28,6 +28,13 @@ zip -X "$OUT" \
   icons/icon48.png \
   icons/icon128.png
 
+# Refresh the loadable copy for local development. The repo root can't be
+# loaded unpacked because Chrome reserves names starting with "_" and
+# rejects the __tests__ directory; dist/unpacked contains runtime files only.
+rm -rf dist/unpacked
+unzip -q "$OUT" -d dist/unpacked
+
 echo ""
 echo "Package ready: $OUT"
+echo "Unpacked copy for chrome://extensions -> Load unpacked: dist/unpacked"
 unzip -l "$OUT"

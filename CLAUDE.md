@@ -15,9 +15,9 @@ npx jest -t "evaluates sin in degrees"       # run tests matching a name
 
 `make test`, `make test-watch`, and `make test-coverage` wrap the same npm scripts.
 
-No build step — the extension loads directly from source files via Chrome's manifest V3.
+No build step for the code itself, but the repo root cannot be loaded unpacked: Chrome reserves names starting with `_` and rejects the `__tests__` directory. `make package` builds the store zip and refreshes `dist/unpacked` with runtime files only.
 
-**Load in Chrome:** `chrome://extensions` → Enable Developer mode → Load unpacked → select this directory.
+**Load in Chrome:** `make package` → `chrome://extensions` → Enable Developer mode → Load unpacked → select `dist/unpacked`. Re-run `make package` and hit the extension's reload button after changes.
 
 ## Architecture
 

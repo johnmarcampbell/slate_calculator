@@ -42,10 +42,15 @@ A Manifest V3 Chrome extension calculator focused on typed expressions rather th
 
 ## Load in Chrome
 
-1. Open `chrome://extensions`
-2. Enable **Developer mode**
-3. Click **Load unpacked**
-4. Select this project folder.
+The repo root can't be loaded directly — Chrome reserves file names starting with `_` and rejects the `__tests__` folder. Load the packaged copy instead:
+
+1. Run `make package` (builds `dist/` and refreshes `dist/unpacked`)
+2. Open `chrome://extensions` (or `brave://extensions`)
+3. Enable **Developer mode**
+4. Click **Load unpacked**
+5. Select the `dist/unpacked` folder.
+
+After code changes, run `make package` again and click the extension's reload button.
 
 ## Manual Smoke Checks
 
